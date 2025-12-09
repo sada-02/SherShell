@@ -105,7 +105,7 @@ int main() {
         pid_t pid = fork();
 
         if(pid == 0) {
-          execvp(isExec.string() , args.data());
+          execvp(isExec.string().c_str() , args.data());
         }
         else {
           int status;
