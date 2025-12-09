@@ -11,10 +11,15 @@ int main() {
     string cmd;
     getline(cin,cmd);
 
-    if(cmd == "exit") break;
-    
-    cout<<cmd<<": command not found"<<endl; 
-  
+    if(cmd == "exit") {
+      break;
+    }
+    else if(cmd.substr(0,4) == "echo" && cmd[4] == ' ') {
+      cout<<cmd.substr(5)<<endl;
+    }
+    else {
+      cout<<cmd<<": command not found"<<endl; 
+    }
   }
 
   return 0;
