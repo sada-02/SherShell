@@ -4,12 +4,18 @@
 #include <map>
 #include <sstream>
 #include <filesystem>
+#include <sys/wait.h>
 using namespace std;
 namespace fs = filesystem;
 
+#ifdef _WIN32
+  const char delimiter = ';';
+#else
+  const char delimiter = ':';
+#endif
+
 map<string,string> commands;
-vector<fs::path> execFiles;
-vector<string> builtins = {"echo" , "exit" , "type" , "exit"};
+vector<string> builtins = {"echo" , "exit" , "type"};
 string PATH;
 
 vector<string> tokenize(string& query) {
@@ -24,58 +30,48 @@ vector<string> tokenize(string& query) {
   return tokens;
 }
 
-void getExecFiles() {
-  int start=0;
-  for(int i=0 ;i<PATH.size() ;i++) {
-    if(PATH[i] == ':') {
-      string p = PATH.substr(start , i-start);
+fs::path checkExec(const string& leftOver) {
+  string dir;
+  stringstream path(PATH);
+  bool flag = false;
 
-      if(fs::exists(p)) {
-        for(const auto& DIR : fs::directory_iterator(p)) {
-          if(!DIR.is_directory() && (DIR.status().permissions() & fs::perms::owner_exec)==fs::perms::owner_exec) {
-            execFiles.emplace_back(DIR.path());
-          }
-        }
+  while(getline(path , dir , delimiter)) {
+    fs::path fullPath = fs::path(dir) / leftOver;
+
+    if(fs::exists(fullPath) && !fs::is_directory(fullPath)) {
+      auto perms = fs::status(fullPath).permissions();
+      if((perms & fs::perms::owner_exec) != fs::perms::none ||
+        (perms & fs::perms::group_exec) != fs::perms::none ||
+        (perms & fs::perms::others_exec) != fs::perms::none) {
+        return fullPath;
       }
-
-      start = i+1;
-    }
-  }
-}
-
-fs::path findPath(string& s) {
-  for(const auto& p :execFiles) {
-    if(p.stem() == s) {
-      return p;
     }
   }
 
-  return fs::path{};
+  return {};
 }
 
 int main() {
   cout<<unitbuf;
   cerr<<unitbuf;
 
-  for(string& b : builtins) commands[b] = "sh";
+  for(const string& str : builtins) commands[str] = "sh";
   PATH = getenv("PATH");
-  PATH.append(":");
-  getExecFiles();
 
   while(true) {
     cout << "$ ";
+    
     string cmd;
     getline(cin,cmd);
 
     vector<string> tokens = tokenize(cmd);
+    if(tokens.empty()) continue;
 
-    if(tokens[0] == "exit") {
+    if(cmd == "exit") {
       break;
     }
     else if(tokens[0] == "echo") {
-      for(string& str : tokens) {
-        cout<<str<<" "<<endl;
-      }
+      cout<<cmd.substr(5)<<endl;
     }
     else if(tokens[0] == "type") {
       string leftOver = cmd.substr(5);
@@ -84,7 +80,7 @@ int main() {
         cout<<leftOver<<" is a shell builtin"<<endl;
       }
       else {
-        auto p = findPath(leftOver);
+        fs::path p = checkExec(leftOver);
         if(!p.empty()) {
           cout<<leftOver<<" is "<<p.string()<<endl;
         }
@@ -94,7 +90,28 @@ int main() {
       }
     }
     else {
-      cout<<cmd<<": command not found"<<endl; 
+      fs::path isExec = checkExec(tokens[0]);
+
+      if(isExec.empty()) {
+        cout<<cmd<<": command not found"<<endl;
+      }
+      else {
+        vector<char*> args;
+        for(auto& t : tokens) {
+          args.push_back(const_cast<char*>(t.c_str()));
+        }
+        args.push_back(NULL);
+
+        pid_t pid = fork();
+
+        if(pid == 0) {
+          execvp(isExec , args.data());
+        }
+        else {
+          int status;
+          waitpid(pid,&status,0);
+        }
+      }
     }
   }
 
