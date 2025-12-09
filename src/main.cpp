@@ -6,8 +6,10 @@ int main() {
   cout<<unitbuf;
   cerr<<unitbuf;
 
-  cout << "$ ";
-  string cmd;
-  getline(cin,cmd);
-  cout<<cmd<<": command not found"<<endl; 
+  while(true) {
+    cout << "$ ";
+    string cmd;
+    getline(cin,cmd);
+    cout<<cmd<<": command not found"<<endl; 
+  }
 }
