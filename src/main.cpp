@@ -88,8 +88,6 @@ vector<string> tokenize(string& query) {
     else {
       if(escapeON) {
         escapeON = !escapeON;
-      }
-      else {
         if(indoublequotes) {
           bool f = false;
           for(char c : specialChars) {
@@ -98,7 +96,7 @@ vector<string> tokenize(string& query) {
             }
           }
 
-          if(f) temp+='\\';
+          if(!f) temp+='\\';
         }
       }
 
