@@ -131,6 +131,7 @@ int main() {
         cout<<tokens[i];
         if(i != tokens.size()-1) cout<<" ";
       }
+      cout<<endl;
     }
     else if(tokens[0] == "cat") {
       for(int i=1 ;i<tokens.size() ;i++) {
