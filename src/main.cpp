@@ -114,10 +114,10 @@ int main() {
         
         fs::path curr = fs::current_path();
         for(int i=0 ;i<pathTokens.size() ;i++) {
-          if(pathTokens[i] == '.') {
+          if(pathTokens[i] == ".") {
             continue;
           }
-          else if(pathTokens[i] == '..') {
+          else if(pathTokens[i] == "..") {
             curr = curr.parent_path();
           }
           else {
