@@ -168,7 +168,7 @@ fs::path generatePath(vector<string>& pathTokens) {
   return curr;
 }
 
-vector<string> tokenizePATH(string& path) {
+vector<string> tokenizePATH(const string& path) {
   vector<string> pathTokens;
   stringstream p(path);
   string partpath;
@@ -179,7 +179,7 @@ vector<string> tokenizePATH(string& path) {
   return pathTokens;
 }
 
-fs::path createPathTo(string& filePath) {
+fs::path createPathTo(const string& filePath) {
   fs::path fPath , parentPath;
   if(filePath[0] == '/') {
     fPath = fs::path(filePath);
