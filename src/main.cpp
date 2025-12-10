@@ -104,6 +104,33 @@ int main() {
           cout<<"cd: "<<path<<": No such file or directory"<<endl;
         }
       }
+      else if(path[0] == '.') {
+        vector<string> pathTokens;
+        stringstream p(path);
+        string partpath;
+        while(getline(p,partpath,delimiter)) {
+          pathTokens.emplace_back(partpath);
+        }
+        
+        fs::path curr = fs::current_path();
+        for(int i=0 ;i<pathTokens.size() ;i++) {
+          if(pathTokens[i] == '.') {
+            continue;
+          }
+          else if(pathTokens[i] == '..') {
+            curr = curr.parent_path();
+          }
+          else {
+            curr = curr/pathTokens[i];
+          }
+          if(fs::exists(curr) && fs::is_directory(curr)) {
+            fs::current_path(curr);
+          }
+          else {
+            cout<<"cd: "<<curr.string()<<": No such file or directory"<<endl;
+          }
+        }
+      }
     }
     else {
       fs::path isExec = checkExec(tokens[0]);
