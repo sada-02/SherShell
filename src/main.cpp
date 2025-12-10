@@ -27,18 +27,21 @@ vector<string> tokenize(string& query) {
   vector<string> tokens ;
   string temp = "";
   bool insinglequotes = false , indoublequotes = false , escapeON = false;
+
   for(int i=0 ;i<query.size() ;i++) {
     if(query[i] == ' ') {
-      if(temp.size() && (!insinglequotes && !indoublequotes) && !escapeON) {
-        tokens.emplace_back(temp);
-        temp = "";
-      }
-      else {
-        if(escapeON) {
-          escapeON = !escapeON;
+      if(temp.size()) {
+        if((!insinglequotes && !indoublequotes) && !escapeON) {
+          tokens.emplace_back(temp);
+          temp = "";
         }
-        
-        temp+=query[i];
+        else {
+          if(escapeON) {
+            escapeON = !escapeON;
+          }
+          
+          temp+=query[i];
+        }
       }
     }
     else if(query[i] == '\\') {
