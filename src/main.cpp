@@ -20,6 +20,7 @@ namespace fs = filesystem;
 
 map<string,string> commands;
 vector<string> builtins = {"echo" , "exit" , "type" , "pwd" ,"cd"};
+vector<char> specialChars = {'\"',"\\","$","`"}
 string PATH;
 string HOME;
 
@@ -58,6 +59,10 @@ vector<string> tokenize(string& query) {
     }
     else if(query[i] == '\'') {
       if(indoublequotes) {
+        if(escapeON) {
+          escapeON = !escapeON;
+          temp+='\\';
+        }
         temp+=query[i];
       }
       else if(escapeON) {
@@ -83,6 +88,18 @@ vector<string> tokenize(string& query) {
     else {
       if(escapeON) {
         escapeON = !escapeON;
+      }
+      else {
+        if(indoublequotes) {
+          bool f = false;
+          for(char c : specialChars) {
+            if(c == query[i]) {
+              f = true;
+            }
+          }
+
+          if(!f) temp+='\\';
+        }
       }
       temp+=query[i];
     }
