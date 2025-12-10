@@ -98,9 +98,10 @@ vector<string> tokenize(string& query) {
             }
           }
 
-          if(!f) temp+='\\';
+          if(f) temp+='\\';
         }
       }
+
       temp+=query[i];
     }
   }
