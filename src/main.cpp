@@ -290,7 +290,7 @@ int main() {
         }
 
         while(getline(File,line)) {
-          str+=line + '\n';
+          str+=line;
         }
         File.close();
       }
