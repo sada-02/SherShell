@@ -309,7 +309,8 @@ int main() {
         }
         File.close();
       }
-      str+='\n';
+      
+      if(str.size()) str+='\n';
     }
     else if(tokens[0] == "type") {
       for(int i=1 ; i<maxIDX ;i++) {
