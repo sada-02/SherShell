@@ -213,7 +213,7 @@ int main() {
 
   while(true) {
     cout << "$ ";
-    bool append = false , overWrite = false , directop = false ;
+    bool append = false , overWrite = false , directop = false, stderrRedirect = false;
     string cmd , str = "" , errorstr = "";
     getline(cin,cmd);
 
@@ -228,6 +228,9 @@ int main() {
         outputFilePath = tokens[i+1];
         maxIDX = i;
         directop = true;
+        if(tokens[i] == "2>") {
+          stderrRedirect = true;
+        }
         break;
       }
       else if(tokens[i] == ">>") {
@@ -400,47 +403,49 @@ int main() {
     else {
       fs::path outputFile = createPathTo(outputFilePath);
 
-      if(directop) {
-        if(errorstr.size()) {
-          cerr<<errorstr;
-        }
-
-        if(overWrite) {
-        ofstream File(outputFile.string());
-
-        if(File.is_open()) {
-          File<<str;
-          File.close();
-          }
-        }
-        else {
-          ofstream File(outputFile.string() , ios::app);
-          if(File.is_open()) {
-            File<<str;
-            File.close();
-          }
-        } 
-      }
-      else {
+      if(stderrRedirect) {
         if(str.size()) {
           cout<<str;
         }
 
-        if(overWrite) {
-        ofstream File(outputFile.string());
-
-        if(File.is_open()) {
-          File<<errorstr;
-          File.close();
+        if(errorstr.size()) {
+          if(overWrite) {
+            ofstream File(outputFile.string());
+            if(File.is_open()) {
+              File<<errorstr;
+              File.close();
+            }
+          }
+          else {
+            ofstream File(outputFile.string() , ios::app);
+            if(File.is_open()) {
+              File<<errorstr;
+              File.close();
+            }
           }
         }
-        else {
-          ofstream File(outputFile.string() , ios::app);
-          if(File.is_open()) {
-            File<<errorstr;
-            File.close();
+      }
+      else {
+        if(errorstr.size()) {
+          cerr<<errorstr;
+        }
+
+        if(str.size()) {
+          if(overWrite) {
+            ofstream File(outputFile.string());
+            if(File.is_open()) {
+              File<<str;
+              File.close();
+            }
           }
-        } 
+          else {
+            ofstream File(outputFile.string() , ios::app);
+            if(File.is_open()) {
+              File<<str;
+              File.close();
+            }
+          }
+        }
       }
     }
   }
