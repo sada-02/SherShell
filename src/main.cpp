@@ -185,7 +185,8 @@ fs::path createPathTo(const string& filePath) {
     fPath = fs::path(filePath);
   }
   else {
-    fPath = generatePath(tokenizePATH(filePath));
+    vector<string> temp = tokenizePATH(filePath);
+    fPath = generatePath(temp);
   }
 
   parentPath = fPath.parent_path();
@@ -241,18 +242,22 @@ int main() {
         i++;
         fs::path outputFile = createPathTo(tokens[i]);
 
-        if(FILE.is_open()) {
-          if(overWrite) {
-            ofstream File(outputFile.string());
-            File<<str;
-            File.close();
-          }
-          else {
-            ofstream File(outputFile.string() , ios::app);
+        if(overWrite) {
+          ofstream File(outputFile.string());
+
+          if(File.is_open()) {
             File<<str;
             File.close();
           }
         }
+        else {
+          ofstream File(outputFile.string() , ios::app);
+          if(File.is_open()) {
+            File<<str;
+            File.close();
+          }
+        }
+        
       }
     }
     else if(tokens[0] == "cat") {
