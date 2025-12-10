@@ -168,6 +168,34 @@ fs::path generatePath(vector<string>& pathTokens) {
   return curr;
 }
 
+vector<string> tokenizePATH(string& path) {
+  vector<string> pathTokens;
+  stringstream p(path);
+  string partpath;
+  while(getline(p,partpath,pathDelimiter)) {
+    pathTokens.emplace_back(partpath);
+  }
+
+  return pathTokens;
+}
+
+fs::path createPathTo(string& filePath) {
+  fs::path fPath , parentPath;
+  if(filePath[0] == '/') {
+    fPath = fs::path(filePath);
+  }
+  else {
+    fPath = generatePath(filePath);
+  }
+
+  parentPath = fPath.parent_path();
+  if(!fs::exists(parentPath)) {
+    fs::create_directories(parentPath);
+  }
+
+  return fPath;
+}
+
 int main() {
   cout<<unitbuf;
   cerr<<unitbuf;
@@ -189,11 +217,43 @@ int main() {
       break;
     }
     else if(tokens[0] == "echo") {
-      for(int i=1 ;i<tokens.size() ;i++) {
-        cout<<tokens[i];
-        if(i != tokens.size()-1) cout<<" ";
+      string str = "";
+      int i=1;
+      bool append = false , overWrite = false;
+      for(i=1 ;i<tokens.size() ;i++) {
+        if(tokens[i] == '>' || tokens[i] == "1>") {
+          overWrite = true;
+          break;
+        }
+        else if(tokens[i] == ">>") {
+          append = true;
+          break;
+        }
+
+        str+=tokens[i];
+        if(i != tokens.size()-1) str+=" ";
       }
-      cout<<endl;
+
+      if(!append && !overWrite) {
+        cout<<str<<endl;
+      }
+      else {
+        i++;
+        fs::path outputFile = createPathTo(tokens[i]);
+
+        if(FILE.is_open()) {
+          if(overWrite) {
+            ofstream FILE(outputFile.string());
+            FILE<<str;
+            FILE.close();
+          }
+          else {
+            ofstream FILE(outputFile.string() , ios::app);
+            FILE<<str;
+            FILE.close();
+          }
+        }
+      }
     }
     else if(tokens[0] == "cat") {
       for(int i=1 ;i<tokens.size() ;i++) {
@@ -246,13 +306,7 @@ int main() {
         continue;
       }
 
-      string path = tokens[1];
-      vector<string> pathTokens;
-      stringstream p(path);
-      string partpath;
-      while(getline(p,partpath,pathDelimiter)) {
-        pathTokens.emplace_back(partpath);
-      }
+      vector<string> pathTokens = tokenizePATH(tokens[1]);
 
       if(path[0] == '/') {
         fs::path absPath = fs::path(path);
