@@ -213,8 +213,7 @@ int main() {
 
   while(true) {
     cout << "$ ";
-    bool append = false , overWrite = false;
-    
+    bool append = false , overWrite = false , directop = false ;
     string cmd , str = "" , errorstr = "";
     getline(cin,cmd);
 
@@ -224,16 +223,18 @@ int main() {
     
     string outputFilePath = "";
     for(int i=0 ;i<tokens.size() ;i++) {
-      if(tokens[i] == ">" || tokens[i] == "1>") {
+      if(tokens[i] == ">" || tokens[i] == "1>" || tokens[i] == "2>") {
         overWrite = true;
         outputFilePath = tokens[i+1];
         maxIDX = i;
+        directop = true;
         break;
       }
       else if(tokens[i] == ">>") {
         append = true;
         outputFilePath = tokens[i+1];
         maxIDX = i;
+        directop = true;
         break;
       }
     }
@@ -394,25 +395,48 @@ int main() {
     else {
       fs::path outputFile = createPathTo(outputFilePath);
 
-      if(errorstr.size()) {
-        cout<<errorstr;
-      }
-      
-      if(overWrite) {
+      if(directop) {
+        if(errorstr.size()) {
+          cout<<errorstr;
+        }
+
+        if(overWrite) {
         ofstream File(outputFile.string());
 
         if(File.is_open()) {
           File<<str;
           File.close();
+          }
         }
+        else {
+          ofstream File(outputFile.string() , ios::app);
+          if(File.is_open()) {
+            File<<str;
+            File.close();
+          }
+        } 
       }
       else {
-        ofstream File(outputFile.string() , ios::app);
-        if(File.is_open()) {
-          File<<str;
-          File.close();
+        if(str.size()) {
+          cout<<str;
         }
-      } 
+
+        if(overWrite) {
+        ofstream File(outputFile.string());
+
+        if(File.is_open()) {
+          File<<errorstr;
+          File.close();
+          }
+        }
+        else {
+          ofstream File(outputFile.string() , ios::app);
+          if(File.is_open()) {
+            File<<errorstr;
+            File.close();
+          }
+        } 
+      }
     }
   }
 
