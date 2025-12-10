@@ -207,108 +207,105 @@ int main() {
 
   while(true) {
     cout << "$ ";
+    bool append = false , overWrite = false;
     
-    string cmd;
+    string cmd , str = "" , errorstr = "";
     getline(cin,cmd);
 
     vector<string> tokens = tokenize(cmd);
     if(tokens.empty()) continue;
+    
+    string outputFilePath = "";
+    for(int i=0 ;i<tokens.size() ;i++) {
+      if(tokens[i] == ">" || tokens[i] == "1>") {
+        overWrite = true;
+        outputFilePath = tokens[i+1];
+        break;
+      }
+      else if(tokens[i] == ">>") {
+        append = true;
+        outputFilePath = tokens[i+1];
+        break;
+      }
+    }
 
     if(cmd == "exit") {
       break;
     }
     else if(tokens[0] == "ls") {
-      string str = "";
-      for(const auto& files : fs::directory_iterator(".")) {
-        str = str + files.path().filename().string()+'\n';
+      char sep = ' ';
+      string p = "";
+
+      if(tokens.size() > 1) {
+        for(int i=1 ;i<tokens.size() ;i++) {
+          if(tokens[i] == ">" || tokens[i] == "1>" || tokens[i] == ">>") break;
+          if(tokens[i][0] == '-') {
+            sep = '\n';
+          }
+          else {
+            p = tokens[i];
+          }
+        }
+      }
+
+      if(!p.size()) p = ".";
+
+      for(const auto& files : fs::directory_iterator(p)) {
+        str = str + files.path().filename().string()+sep;
       } 
-      cout<<str;
     }
     else if(tokens[0] == "echo") {
-      string str = "";
-      int i=1;
-      bool append = false , overWrite = false;
-      for(i=1 ;i<tokens.size() ;i++) {
-        if(tokens[i] == ">" || tokens[i] == "1>") {
-          overWrite = true;
-          break;
-        }
-        else if(tokens[i] == ">>") {
-          append = true;
+      for(int i=1 ;i<tokens.size() ;i++) {
+        if(tokens[i] == ">" || tokens[i] == "1>" || tokens[i] == ">>") {
           break;
         }
 
         str+=tokens[i];
         if(i != tokens.size()-1) str+=" ";
       }
-
-      if(!append && !overWrite) {
-        cout<<str<<endl;
-      }
-      else {
-        i++;
-        fs::path outputFile = createPathTo(tokens[i]);
-
-        if(overWrite) {
-          ofstream File(outputFile.string());
-
-          if(File.is_open()) {
-            File<<str;
-            File.close();
-          }
-        }
-        else {
-          ofstream File(outputFile.string() , ios::app);
-          if(File.is_open()) {
-            File<<str;
-            File.close();
-          }
-        }
-        
-      }
+      str+='\n';
     }
     else if(tokens[0] == "cat") {
       for(int i=1 ;i<tokens.size() ;i++) {
         if(!fs::exists(fs::path(tokens[i]))) {
-          cerr<<"cat: "<<tokens[i]<<": No such file or cannot open"<<endl;
+          errorstr = "cat: " + tokens[i] + ": No such file or cannot open" + '\n';
           continue;
         }
 
         ifstream File(tokens[i]);
         string line;
         if (!File.is_open()) {
-          cerr<<"cat: "<<tokens[i]<<": File cannot be opened"<<endl;
+          errorstr = "cat: " + tokens[i] + ": File cannot be opened" + '\n';
           continue;
         }
 
         while(getline(File,line)) {
-          cout<<line;
+          str+=line;
         }
         File.close();
       }
-      cout<<endl;
+      str+='\n';
     }
     else if(tokens[0] == "type") {
       for(int i=1 ; i<tokens.size() ;i++) {
         if(commands[tokens[i]] == "sh") {
-          cout<<tokens[i]<<" is a shell builtin";
+          str = tokens[i] + " is a shell builtin";
         }
         else {
           fs::path p = checkExec(tokens[i]);
           if(!p.empty()) {
-            cout<<tokens[i]<<" is "<<p.string();
+            str = tokens[i] + " is " + p.string();
           }
           else {
-            cout<<tokens[i]<<": not found";
+            errorstr = tokens[i] + ": not found" + '\n';
           } 
         }
-
-        cout<<endl;
+        str+='\n';
       }
     }
     else if(tokens[0] == "pwd") {
       fs::path curr = fs::current_path();
-      cout<<curr.string()<<endl;
+      str = curr.string()+'\n';
     }
     else if(tokens[0] == "cd") {
       if(tokens.size() == 1) {
@@ -324,7 +321,7 @@ int main() {
           fs::current_path(absPath);
         }
         else {
-          cout<<"cd: "<<tokens[1]<<": No such file or directory"<<endl;
+          errorstr = "cd: " + tokens[1] + ": No such file or directory" + '\n';
         }
       }
       else if(tokens[1][0] == '~') {
@@ -334,7 +331,7 @@ int main() {
           fs::current_path(curr);
         }
         else {
-          cout<<"cd: "<<curr.string()<<": No such file or directory"<<endl;
+          errorstr = "cd: " + curr.string() + ": No such file or directory" + '\n';
         }
       }
       else {
@@ -344,7 +341,7 @@ int main() {
           fs::current_path(curr);
         }
         else {
-          cout<<"cd: "<<curr.string()<<": No such file or directory"<<endl;
+          errorstr = "cd: " + curr.string() + ": No such file or directory" + '\n';
         }
       }
       
@@ -353,7 +350,7 @@ int main() {
       fs::path isExec = checkExec(tokens[0]);
 
       if(isExec.empty()) {
-        cout<<cmd<<": command not found"<<endl;
+        errorstr = cmd + ": command not found" + '\n';
       }
       else {
         vector<char*> args;
@@ -372,6 +369,34 @@ int main() {
           waitpid(pid,&status,0);
         }
       }
+    }
+
+    if(!append && !overWrite) {
+      if(str.size()) {
+        cout<<str;
+      }
+      else {
+        cerr<<errorstr;
+      }
+    }
+    else {
+      fs::path outputFile = createPathTo(outputFilePath);
+
+      if(overWrite) {
+        ofstream File(outputFile.string());
+
+        if(File.is_open()) {
+          File<<str;
+          File.close();
+        }
+      }
+      else {
+        ofstream File(outputFile.string() , ios::app);
+        if(File.is_open()) {
+          File<<str;
+          File.close();
+        }
+      } 
     }
   }
 
