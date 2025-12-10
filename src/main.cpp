@@ -258,6 +258,10 @@ int main() {
       }
 
       if(!p.size()) p = ".";
+      
+      if(!fs::exists(fs::path(p))) {
+        errorstr += "ls: " + tokens[i] + ": No such file or directory\n";
+      }
 
       vector<string> filesListed;
       for(const auto& files : fs::directory_iterator(p)) {
@@ -279,14 +283,14 @@ int main() {
     else if(tokens[0] == "cat") {
       for(int i=1 ;i<maxIDX ;i++) {
         if(!fs::exists(fs::path(tokens[i]))) {
-          errorstr = "cat: " + tokens[i] + ": No such file or directory" + '\n';
+          errorstr += "cat: " + tokens[i] + ": No such file or directory" + '\n';
           continue;
         }
 
         ifstream File(tokens[i]);
         string line;
         if (!File.is_open()) {
-          errorstr = "cat: " + tokens[i] + ": File cannot be opened" + '\n';
+          errorstr += "cat: " + tokens[i] + ": File cannot be opened" + '\n';
           continue;
         }
 
@@ -311,7 +315,7 @@ int main() {
             str = tokens[i] + " is " + p.string() + '\n';
           }
           else {
-            errorstr = tokens[i] + ": not found" + '\n';
+            errorstr += tokens[i] + ": not found" + '\n';
           } 
         }
       }
@@ -334,7 +338,7 @@ int main() {
           fs::current_path(absPath);
         }
         else {
-          errorstr = "cd: " + tokens[1] + ": No such file or directory" + '\n';
+          errorstr += "cd: " + tokens[1] + ": No such file or directory" + '\n';
         }
       }
       else if(tokens[1][0] == '~') {
@@ -344,7 +348,7 @@ int main() {
           fs::current_path(curr);
         }
         else {
-          errorstr = "cd: " + curr.string() + ": No such file or directory" + '\n';
+          errorstr += "cd: " + curr.string() + ": No such file or directory" + '\n';
         }
       }
       else {
@@ -354,7 +358,7 @@ int main() {
           fs::current_path(curr);
         }
         else {
-          errorstr = "cd: " + curr.string() + ": No such file or directory" + '\n';
+          errorstr += "cd: " + curr.string() + ": No such file or directory" + '\n';
         }
       }
       
@@ -363,7 +367,7 @@ int main() {
       fs::path isExec = checkExec(tokens[0]);
 
       if(isExec.empty()) {
-        errorstr = cmd + ": command not found" + '\n';
+        errorstr += cmd + ": command not found" + '\n';
       }
       else {
         vector<char*> args;
