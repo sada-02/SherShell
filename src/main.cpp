@@ -387,7 +387,10 @@ int main() {
     else {
       fs::path outputFile = createPathTo(outputFilePath);
 
-      if(overWrite) {
+      if(errorstr.size()) {
+        cout<<errorstr;
+      }
+      else if(overWrite) {
         ofstream File(outputFile.string());
 
         if(File.is_open()) {
