@@ -5,27 +5,54 @@
 #include <sstream>
 #include <filesystem>
 #include <sys/wait.h>
+#include <fstream>
 using namespace std;
 namespace fs = filesystem;
 
 #ifdef _WIN32
   const char delimiter = ';';
+  const char pathDelimiter = '/';
+
 #else
   const char delimiter = ':';
+  const char pathDelimiter = '/';
 #endif
 
 map<string,string> commands;
-vector<string> builtins = {"echo" , "exit" , "type" , "pwd" ,"cd"};
+vector<string> builtins = {"echo" , "exit" , "type" , "pwd" ,"cd" , "cat"};
 string PATH;
 string HOME;
 
 vector<string> tokenize(string& query) {
-  stringstream q(query);
-  string temp;
-  vector<string> tokens;
+  vector<string> tokens ;
+  string temp = "";
+  bool flag = false;
+  for(int i=0 ;i<query.size() ;i++) {
+    if(query[i] == ' ') {
+      if(temp.size() && !flag) {
+        tokens.emplace_back(temp);
+        temp = "";
+      }
+      else if(flag) {
+        temp+=query[i];
+      }
+    }
+    else if(query[i] == '\'') {
+      flag = !flag;
+    }
+    else {
+      temp+=query[i];
+    }
+  }
 
-  while(getline(q,temp,' ')) {
-    tokens.emplace_back(temp);
+  if(temp.size()) {
+    if(flag) {
+      tokens.emplace_back("\'"+temp);
+    }
+    else {
+      tokens.emplace_back(temp);
+    }
+    
   }
 
   return tokens;
@@ -52,6 +79,33 @@ fs::path checkExec(const string& leftOver) {
   return {};
 }
 
+fs::path generatePath(vector<string>& pathTokens) {
+  fs::path curr;
+  if(pathTokens[0] == "~") {
+    curr = fs::path(HOME);
+  }
+  else {
+    curr = fs::current_path();
+  }
+
+  for(int i=0 ;i<pathTokens.size() ;i++) {
+    if(pathTokens[i] == ".") {
+      continue;
+    }
+    else if(pathTokens[i] == "~") {
+      curr = fs::path(HOME);
+    }
+    else if(pathTokens[i] == "..") {
+      curr = curr.parent_path();
+    }
+    else {
+      curr = curr/pathTokens[i];
+    }
+  }
+
+  return curr;
+}
+
 int main() {
   cout<<unitbuf;
   cerr<<unitbuf;
@@ -73,10 +127,37 @@ int main() {
       break;
     }
     else if(tokens[0] == "echo") {
-      cout<<cmd.substr(5)<<endl;
+      for(int i=1 ;i<tokens.size() ;i++) {
+        cout<<tokens[i];
+        if(i != tokens.size()-1) cout<<" ";
+      }
+    }
+    else if(tokens[0] == "cat") {
+      for(int i=1 ;i<tokens.size() ;i++) {
+        if(!fs::exists(fs::path(tokens[i]))) {
+          cerr<<"cat: "<<tokens[i]<<": No such file or cannot open"<<endl;
+          continue;
+        }
+
+        ifstream File(tokens[i]);
+        string line;
+        if (!File.is_open()) {
+          cerr<<"cat: "<<tokens[i]<<": File cannot be opened"<<endl;
+          continue;
+        }
+
+        while(getline(File,line)) {
+          cout<<line<<endl;
+        }
+        File.close();
+      }
     }
     else if(tokens[0] == "type") {
-      string leftOver = cmd.substr(5);
+      string leftOver = "";
+      for(int i=1 ; i<tokens.size() ;i++) {
+        leftOver += tokens[i] ;
+        if(i != tokens.size()-1) leftOver+=" ";
+      }
 
       if(commands[leftOver] == "sh") {
         cout<<leftOver<<" is a shell builtin"<<endl;
@@ -96,8 +177,20 @@ int main() {
       cout<<curr.string()<<endl;
     }
     else if(tokens[0] == "cd") {
+      if(tokens.size() == 1) {
+        fs::current_path(fs::path(HOME));
+        continue;
+      }
+
       string path = tokens[1];
-      if(path[0] == '/') {
+      vector<string> pathTokens;
+      stringstream p(path);
+      string partpath;
+      while(getline(p,partpath,pathDelimiter)) {
+        pathTokens.emplace_back(partpath);
+      }
+
+      if(path[0] == "/") {
         fs::path absPath = fs::path(path);
         if(fs::exists(absPath) && fs::is_directory(absPath)) {
           fs::current_path(absPath);
@@ -106,36 +199,27 @@ int main() {
           cout<<"cd: "<<path<<": No such file or directory"<<endl;
         }
       }
-      else if(path[0] == '.') {
-        vector<string> pathTokens;
-        stringstream p(path);
-        string partpath;
-        while(getline(p,partpath,delimiter)) {
-          pathTokens.emplace_back(partpath);
+      else if(path[0] == "~") {
+        fs::path curr = generatePath(pathTokens);
+
+        if(fs::exists(curr) && fs::is_directory(curr)) {
+          fs::current_path(curr);
         }
+        else {
+          cout<<"cd: "<<curr.string()<<": No such file or directory"<<endl;
+        }
+      }
+      else {
+        fs::path curr = generatePath(pathTokens);
         
-        fs::path curr = fs::current_path();
-        for(int i=0 ;i<pathTokens.size() ;i++) {
-          if(pathTokens[i] == ".") {
-            continue;
-          }
-          else if(pathTokens[i] == "..") {
-            curr = curr.parent_path();
-          }
-          else {
-            curr = curr/pathTokens[i];
-          }
-          if(fs::exists(curr) && fs::is_directory(curr)) {
-            fs::current_path(curr);
-          }
-          else {
-            cout<<"cd: "<<curr.string()<<": No such file or directory"<<endl;
-          }
+        if(fs::exists(curr) && fs::is_directory(curr)) {
+          fs::current_path(curr);
+        }
+        else {
+          cout<<"cd: "<<curr.string()<<": No such file or directory"<<endl;
         }
       }
-      else if(path[0] == '~') {
-        fs::current_path(HOME);
-      }
+      
     }
     else {
       fs::path isExec = checkExec(tokens[0]);
