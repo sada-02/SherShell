@@ -20,7 +20,7 @@ namespace fs = filesystem;
 
 map<string,string> commands;
 vector<string> builtins = {"echo" , "exit" , "type" , "pwd" ,"cd"};
-vector<char> specialChars = {'\"',"\\","$","`"}
+vector<char> specialChars = {'\"',"\\","$","`"};
 string PATH;
 string HOME;
 
