@@ -254,10 +254,10 @@ int main() {
       for(const auto& files : fs::directory_iterator(p)) {
         filesListed.emplace_back(files.path().filename().string());
       } 
-      sort(filesListed.begin() , filesListed.end());
 
+      sort(filesListed.begin() , filesListed.end());
       for(const string& s : filesListed) {
-        str = str + sep;
+        str = str + s + sep;
       }
     }
     else if(tokens[0] == "echo") {
