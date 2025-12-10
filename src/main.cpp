@@ -291,6 +291,9 @@ int main() {
 
         while(getline(File,line)) {
           str+=line;
+          if(File.peek() != EOF) {
+            str+='\n';
+          }
         }
         File.close();
       }
