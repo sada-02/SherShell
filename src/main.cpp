@@ -17,6 +17,7 @@ namespace fs = filesystem;
 map<string,string> commands;
 vector<string> builtins = {"echo" , "exit" , "type" , "pwd" ,"cd"};
 string PATH;
+string HOME;
 
 vector<string> tokenize(string& query) {
   stringstream q(query);
@@ -57,6 +58,7 @@ int main() {
 
   for(const string& str : builtins) commands[str] = "sh";
   PATH = getenv("PATH");
+  HOME = getenv("HOME");
 
   while(true) {
     cout << "$ ";
@@ -94,7 +96,7 @@ int main() {
       cout<<curr.string()<<endl;
     }
     else if(tokens[0] == "cd") {
-      string path = cmd.substr(3);
+      string path = tokens[1];
       if(path[0] == '/') {
         fs::path absPath = fs::path(path);
         if(fs::exists(absPath) && fs::is_directory(absPath)) {
@@ -130,6 +132,9 @@ int main() {
             cout<<"cd: "<<curr.string()<<": No such file or directory"<<endl;
           }
         }
+      }
+      else if(path[0] == '~') {
+        fs::current_path(HOME);
       }
     }
     else {
