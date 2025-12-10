@@ -239,7 +239,7 @@ int main() {
       if(tokens.size() > 1) {
         for(int i=1 ;i<tokens.size() ;i++) {
           if(tokens[i] == ">" || tokens[i] == "1>" || tokens[i] == ">>") break;
-          if(tokens[i][0] == "-") {
+          if(tokens[i][0] == '-') {
             sep = "\n";
           }
           else {
