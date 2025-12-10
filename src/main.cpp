@@ -233,14 +233,14 @@ int main() {
       break;
     }
     else if(tokens[0] == "ls") {
-      string sep = "\n";
+      string sep = " ";
       string p = "";
 
       if(tokens.size() > 1) {
         for(int i=1 ;i<tokens.size() ;i++) {
           if(tokens[i] == ">" || tokens[i] == "1>" || tokens[i] == ">>") break;
           if(tokens[i][0] == '-') {
-            sep = " ";
+            sep = "\n";
           }
           else {
             p = tokens[i];
@@ -280,11 +280,10 @@ int main() {
         }
 
         while(getline(File,line)) {
-          str+=line;
+          str+=line + '\n';
         }
         File.close();
       }
-      str+='\n';
     }
     else if(tokens[0] == "type") {
       for(int i=1 ; i<tokens.size() ;i++) {
