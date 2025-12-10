@@ -233,14 +233,14 @@ int main() {
       break;
     }
     else if(tokens[0] == "ls") {
-      string sep = " ";
+      string sep = "\n";
       string p = "";
 
       if(tokens.size() > 1) {
         for(int i=1 ;i<tokens.size() ;i++) {
           if(tokens[i] == ">" || tokens[i] == "1>" || tokens[i] == ">>") break;
           if(tokens[i][0] == '-') {
-            sep = "\n";
+            sep = " ";
           }
           else {
             p = tokens[i];
