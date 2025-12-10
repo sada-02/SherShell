@@ -19,7 +19,7 @@ namespace fs = filesystem;
 #endif
 
 map<string,string> commands;
-vector<string> builtins = {"echo" , "exit" , "type" , "pwd" ,"cd" , "cat"};
+vector<string> builtins = {"echo" , "exit" , "type" , "pwd" ,"cd"};
 string PATH;
 string HOME;
 
