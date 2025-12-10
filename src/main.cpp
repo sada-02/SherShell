@@ -148,7 +148,7 @@ int main() {
         }
 
         while(getline(File,line)) {
-          cout<<line<<" ";
+          cout<<line;
         }
         File.close();
       }
