@@ -260,7 +260,7 @@ int main() {
       if(!p.size()) p = ".";
       
       if(!fs::exists(fs::path(p))) {
-        errorstr += "ls: " + tokens[i] + ": No such file or directory\n";
+        errorstr += "ls: " + p + ": No such file or directory\n";
       }
 
       vector<string> filesListed;
