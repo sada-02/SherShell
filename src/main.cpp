@@ -185,7 +185,7 @@ fs::path createPathTo(string& filePath) {
     fPath = fs::path(filePath);
   }
   else {
-    fPath = generatePath(filePath);
+    fPath = generatePath(tokenizePATH(filePath));
   }
 
   parentPath = fPath.parent_path();
@@ -221,7 +221,7 @@ int main() {
       int i=1;
       bool append = false , overWrite = false;
       for(i=1 ;i<tokens.size() ;i++) {
-        if(tokens[i] == '>' || tokens[i] == "1>") {
+        if(tokens[i] == ">" || tokens[i] == "1>") {
           overWrite = true;
           break;
         }
@@ -243,14 +243,14 @@ int main() {
 
         if(FILE.is_open()) {
           if(overWrite) {
-            ofstream FILE(outputFile.string());
-            FILE<<str;
-            FILE.close();
+            ofstream File(outputFile.string());
+            File<<str;
+            File.close();
           }
           else {
-            ofstream FILE(outputFile.string() , ios::app);
-            FILE<<str;
-            FILE.close();
+            ofstream File(outputFile.string() , ios::app);
+            File<<str;
+            File.close();
           }
         }
       }
@@ -308,7 +308,7 @@ int main() {
 
       vector<string> pathTokens = tokenizePATH(tokens[1]);
 
-      if(path[0] == '/') {
+      if(tokens[1][0] == '/') {
         fs::path absPath = fs::path(path);
         if(fs::exists(absPath) && fs::is_directory(absPath)) {
           fs::current_path(absPath);
@@ -317,7 +317,7 @@ int main() {
           cout<<"cd: "<<path<<": No such file or directory"<<endl;
         }
       }
-      else if(path[0] == '~') {
+      else if(tokens[1][0] == '~') {
         fs::path curr = generatePath(pathTokens);
 
         if(fs::exists(curr) && fs::is_directory(curr)) {
