@@ -194,6 +194,12 @@ fs::path createPathTo(const string& filePath) {
     fs::create_directories(parentPath);
   }
 
+  if(!fs::exists(fPath)) {
+    ofstream File(outputFile.string());
+    File.close();
+  }
+
+
   return fPath;
 }
 
