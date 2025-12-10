@@ -250,9 +250,15 @@ int main() {
 
       if(!p.size()) p = ".";
 
+      vector<string> filesListed;
       for(const auto& files : fs::directory_iterator(p)) {
-        str = str + files.path().filename().string()+sep;
+        filesListed.emplace_back(files.path().filename().string());
       } 
+      sort(filesListed.begin() , filesListed.end());
+
+      for(const string& s : filesListed) {
+        str = str + sep;
+      }
     }
     else if(tokens[0] == "echo") {
       for(int i=1 ;i<tokens.size() ;i++) {
