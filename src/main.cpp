@@ -26,19 +26,32 @@ string HOME;
 vector<string> tokenize(string& query) {
   vector<string> tokens ;
   string temp = "";
-  bool flag = false;
+  bool insinglequotes = false , indoublequotes = false;
   for(int i=0 ;i<query.size() ;i++) {
     if(query[i] == ' ') {
-      if(temp.size() && !flag) {
+      if(temp.size() && (!insinglequotes || !indoublequotes)) {
         tokens.emplace_back(temp);
         temp = "";
       }
-      else if(flag) {
+      else if(insinglequotes || indoublequotes) {
         temp+=query[i];
       }
     }
     else if(query[i] == '\'') {
-      flag = !flag;
+      if(indoublequotes) {
+        temp+=query[i];
+      }
+      else {
+        insinglequotes = !insinglequotes;
+      }
+    }
+    else if(query[i] == '\"') {
+      if(insinglequotes) {
+        temp+=query[i];
+      }
+      else {
+        indoublequotes = !indoublequotes;
+      }
     }
     else {
       temp+=query[i];
@@ -46,7 +59,7 @@ vector<string> tokenize(string& query) {
   }
 
   if(temp.size()) {
-    if(flag) {
+    if(insinglequotes) {
       tokens.emplace_back("\'"+temp);
     }
     else {
