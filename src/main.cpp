@@ -217,6 +217,13 @@ int main() {
     if(cmd == "exit") {
       break;
     }
+    else if(tokens[0] == "ls") {
+      string str = "";
+      for(const auto& files : fs::directory_iterator(".")) {
+        str = str + files.path().filename().string()+'\n';
+      } 
+      cout<<str;
+    }
     else if(tokens[0] == "echo") {
       string str = "";
       int i=1;
