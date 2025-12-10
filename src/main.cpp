@@ -195,7 +195,7 @@ fs::path createPathTo(const string& filePath) {
   }
 
   if(!fs::exists(fPath)) {
-    ofstream File(outputFile.string());
+    ofstream File(fPath.string());
     File.close();
   }
 
