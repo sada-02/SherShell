@@ -262,15 +262,16 @@ int main() {
       if(!fs::exists(fs::path(p))) {
         errorstr += "ls: " + p + ": No such file or directory\n";
       }
+      else {
+        vector<string> filesListed;
+        for(const auto& files : fs::directory_iterator(p)) {
+          filesListed.emplace_back(files.path().filename().string());
+        } 
 
-      vector<string> filesListed;
-      for(const auto& files : fs::directory_iterator(p)) {
-        filesListed.emplace_back(files.path().filename().string());
-      } 
-
-      sort(filesListed.begin() , filesListed.end());
-      for(const string& s : filesListed) {
-        str = str + s + sep;
+        sort(filesListed.begin() , filesListed.end());
+        for(const string& s : filesListed) {
+          str = str + s + sep;
+        }
       }
     }
     else if(tokens[0] == "echo") {
