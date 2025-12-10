@@ -302,18 +302,17 @@ int main() {
     else if(tokens[0] == "type") {
       for(int i=1 ; i<maxIDX ;i++) {
         if(commands[tokens[i]] == "sh") {
-          str = tokens[i] + " is a shell builtin";
+          str = tokens[i] + " is a shell builtin" + '\n';
         }
         else {
           fs::path p = checkExec(tokens[i]);
           if(!p.empty()) {
-            str = tokens[i] + " is " + p.string();
+            str = tokens[i] + " is " + p.string() + '\n';
           }
           else {
             errorstr = tokens[i] + ": not found" + '\n';
           } 
         }
-        str+='\n';
       }
     }
     else if(tokens[0] == "pwd") {
