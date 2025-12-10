@@ -389,7 +389,7 @@ int main() {
         cout<<str;
       }
       else {
-        cerr<<errorstr;
+        cout<<errorstr;
       }
     }
     else {
