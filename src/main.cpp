@@ -81,7 +81,7 @@ fs::path checkExec(const string& leftOver) {
 
 fs::path generatePath(vector<string>& pathTokens) {
   fs::path curr;
-  if(pathTokens[0] == "~") {
+  if(pathTokens[0] == '~') {
     curr = fs::path(HOME);
   }
   else {
@@ -89,10 +89,10 @@ fs::path generatePath(vector<string>& pathTokens) {
   }
 
   for(int i=0 ;i<pathTokens.size() ;i++) {
-    if(pathTokens[i] == ".") {
+    if(pathTokens[i] == '.') {
       continue;
     }
-    else if(pathTokens[i] == "~") {
+    else if(pathTokens[i] == '~') {
       curr = fs::path(HOME);
     }
     else if(pathTokens[i] == "..") {
@@ -190,7 +190,7 @@ int main() {
         pathTokens.emplace_back(partpath);
       }
 
-      if(path[0] == "/") {
+      if(path[0] == '/') {
         fs::path absPath = fs::path(path);
         if(fs::exists(absPath) && fs::is_directory(absPath)) {
           fs::current_path(absPath);
@@ -199,7 +199,7 @@ int main() {
           cout<<"cd: "<<path<<": No such file or directory"<<endl;
         }
       }
-      else if(path[0] == "~") {
+      else if(path[0] == '~') {
         fs::path curr = generatePath(pathTokens);
 
         if(fs::exists(curr) && fs::is_directory(curr)) {
