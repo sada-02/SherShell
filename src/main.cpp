@@ -214,17 +214,20 @@ int main() {
 
     vector<string> tokens = tokenize(cmd);
     if(tokens.empty()) continue;
+    int maxIDX = tokens.size();
     
     string outputFilePath = "";
     for(int i=0 ;i<tokens.size() ;i++) {
       if(tokens[i] == ">" || tokens[i] == "1>") {
         overWrite = true;
         outputFilePath = tokens[i+1];
+        maxIDX = i;
         break;
       }
       else if(tokens[i] == ">>") {
         append = true;
         outputFilePath = tokens[i+1];
+        maxIDX = i;
         break;
       }
     }
@@ -237,8 +240,7 @@ int main() {
       string p = "";
 
       if(tokens.size() > 1) {
-        for(int i=1 ;i<tokens.size() ;i++) {
-          if(tokens[i] == ">" || tokens[i] == "1>" || tokens[i] == ">>") break;
+        for(int i=1 ;i<maxIDX ;i++) {
           if(tokens[i][0] == '-') {
             sep = "\n";
           }
@@ -261,18 +263,14 @@ int main() {
       }
     }
     else if(tokens[0] == "echo") {
-      for(int i=1 ;i<tokens.size() ;i++) {
-        if(tokens[i] == ">" || tokens[i] == "1>" || tokens[i] == ">>") {
-          break;
-        }
-
+      for(int i=1 ;i<maxIDX ;i++) {
         str+=tokens[i];
         if(i != tokens.size()-1) str+=" ";
       }
       str+='\n';
     }
     else if(tokens[0] == "cat") {
-      for(int i=1 ;i<tokens.size() ;i++) {
+      for(int i=1 ;i<maxIDX ;i++) {
         if(!fs::exists(fs::path(tokens[i]))) {
           errorstr = "cat: " + tokens[i] + ": No such file or cannot open" + '\n';
           continue;
@@ -292,7 +290,7 @@ int main() {
       }
     }
     else if(tokens[0] == "type") {
-      for(int i=1 ; i<tokens.size() ;i++) {
+      for(int i=1 ; i<maxIDX ;i++) {
         if(commands[tokens[i]] == "sh") {
           str = tokens[i] + " is a shell builtin";
         }
