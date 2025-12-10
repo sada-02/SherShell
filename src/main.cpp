@@ -290,7 +290,7 @@ int main() {
         }
 
         while(getline(File,line)) {
-          str+=line;
+          str+=line + '\n';
         }
         File.close();
       }
@@ -394,7 +394,8 @@ int main() {
       if(errorstr.size()) {
         cout<<errorstr;
       }
-      else if(overWrite) {
+      
+      if(overWrite) {
         ofstream File(outputFile.string());
 
         if(File.is_open()) {
