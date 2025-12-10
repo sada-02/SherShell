@@ -92,7 +92,7 @@ fs::path generatePath(vector<string>& pathTokens) {
     if(pathTokens[i] == '.') {
       continue;
     }
-    else if(pathTokens[i] == '~') {
+    else if(pathTokens[i] == "~") {
       curr = fs::path(HOME);
     }
     else if(pathTokens[i] == "..") {
