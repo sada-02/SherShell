@@ -15,7 +15,7 @@ namespace fs = filesystem;
 #endif
 
 map<string,string> commands;
-vector<string> builtins = {"echo" , "exit" , "type"};
+vector<string> builtins = {"echo" , "exit" , "type" , "pwd"};
 string PATH;
 
 vector<string> tokenize(string& query) {
@@ -88,6 +88,10 @@ int main() {
           cout<<leftOver<<": not found"<<endl;
         } 
       }
+    }
+    else if(tokens[0] == "pwd") {
+      fs::path curr = fs::current_path();
+      cout<<curr.string()<<endl;
     }
     else {
       fs::path isExec = checkExec(tokens[0]);
