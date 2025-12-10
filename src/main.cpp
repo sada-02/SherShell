@@ -148,10 +148,11 @@ int main() {
         }
 
         while(getline(File,line)) {
-          cout<<line<<endl;
+          cout<<line<<" ";
         }
         File.close();
       }
+      cout<<endl;
     }
     else if(tokens[0] == "type") {
       string leftOver = "";
