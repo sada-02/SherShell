@@ -282,23 +282,21 @@ int main() {
       cout<<endl;
     }
     else if(tokens[0] == "type") {
-      string leftOver = "";
       for(int i=1 ; i<tokens.size() ;i++) {
-        leftOver += tokens[i] ;
-        if(i != tokens.size()-1) leftOver+=" ";
-      }
-
-      if(commands[leftOver] == "sh") {
-        cout<<leftOver<<" is a shell builtin"<<endl;
-      }
-      else {
-        fs::path p = checkExec(leftOver);
-        if(!p.empty()) {
-          cout<<leftOver<<" is "<<p.string()<<endl;
+        if(commands[tokens[i]] == "sh") {
+          cout<<tokens[i]<<" is a shell builtin";
         }
         else {
-          cout<<leftOver<<": not found"<<endl;
-        } 
+          fs::path p = checkExec(tokens[i]);
+          if(!p.empty()) {
+            cout<<tokens[i]<<" is "<<p.string();
+          }
+          else {
+            cout<<tokens[i]<<": not found";
+          } 
+        }
+
+        cout<<endl;
       }
     }
     else if(tokens[0] == "pwd") {
@@ -314,12 +312,12 @@ int main() {
       vector<string> pathTokens = tokenizePATH(tokens[1]);
 
       if(tokens[1][0] == '/') {
-        fs::path absPath = fs::path(path);
+        fs::path absPath = fs::path(tokens[1]);
         if(fs::exists(absPath) && fs::is_directory(absPath)) {
           fs::current_path(absPath);
         }
         else {
-          cout<<"cd: "<<path<<": No such file or directory"<<endl;
+          cout<<"cd: "<<tokens[1]<<": No such file or directory"<<endl;
         }
       }
       else if(tokens[1][0] == '~') {
