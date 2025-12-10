@@ -81,7 +81,7 @@ fs::path checkExec(const string& leftOver) {
 
 fs::path generatePath(vector<string>& pathTokens) {
   fs::path curr;
-  if(pathTokens[0] == '~') {
+  if(pathTokens[0] == "~") {
     curr = fs::path(HOME);
   }
   else {
@@ -89,7 +89,7 @@ fs::path generatePath(vector<string>& pathTokens) {
   }
 
   for(int i=0 ;i<pathTokens.size() ;i++) {
-    if(pathTokens[i] == '.') {
+    if(pathTokens[i] == ".") {
       continue;
     }
     else if(pathTokens[i] == "~") {
