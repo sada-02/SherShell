@@ -45,7 +45,7 @@ vector<string> tokenize(string& query) {
       }
     }
     else if(query[i] == '\\') {
-      if(insinglequotes || indoublequotes) {
+      if(insinglequotes) {
         temp+='\\';
       }
       else {
