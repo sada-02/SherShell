@@ -29,7 +29,7 @@ vector<string> tokenize(string& query) {
   bool insinglequotes = false , indoublequotes = false;
   for(int i=0 ;i<query.size() ;i++) {
     if(query[i] == ' ') {
-      if(temp.size() && (!insinglequotes || !indoublequotes)) {
+      if(temp.size() && (!insinglequotes && !indoublequotes)) {
         tokens.emplace_back(temp);
         temp = "";
       }
