@@ -15,7 +15,7 @@ namespace fs = filesystem;
 #endif
 
 map<string,string> commands;
-vector<string> builtins = {"echo" , "exit" , "type" , "pwd"};
+vector<string> builtins = {"echo" , "exit" , "type" , "pwd" ,"cd"};
 string PATH;
 
 vector<string> tokenize(string& query) {
@@ -92,6 +92,18 @@ int main() {
     else if(tokens[0] == "pwd") {
       fs::path curr = fs::current_path();
       cout<<curr.string()<<endl;
+    }
+    else if(tokens[0] == "cd") {
+      string path = cmd.substr(3);
+      if(path[0] == '/') {
+        fs::path absPath = fs::path(path);
+        if(fs::exists(absPath) && fs::is_directory(absPath)) {
+          fs::current_path(absPath);
+        }
+        else {
+          cout<<"cd: "<<path<<": No such file or directory"<<endl;
+        }
+      }
     }
     else {
       fs::path isExec = checkExec(tokens[0]);
