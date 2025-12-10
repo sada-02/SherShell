@@ -26,19 +26,39 @@ string HOME;
 vector<string> tokenize(string& query) {
   vector<string> tokens ;
   string temp = "";
-  bool insinglequotes = false , indoublequotes = false;
+  bool insinglequotes = false , indoublequotes = false , escapeON = false;
   for(int i=0 ;i<query.size() ;i++) {
     if(query[i] == ' ') {
-      if(temp.size() && (!insinglequotes && !indoublequotes)) {
+      if(temp.size() && (!insinglequotes && !indoublequotes) && !escapeON) {
         tokens.emplace_back(temp);
         temp = "";
       }
-      else if(insinglequotes || indoublequotes) {
+      else {
+        if(escapeON) {
+          escapeON = !escapeON;
+        }
+        
         temp+=query[i];
+      }
+    }
+    else if(query[i] == '\\') {
+      if(insinglequotes || indoublequotes) {
+        temp+='\\';
+      }
+      else {
+        if(escapeON) {
+          temp+='\\';
+        }
+
+        escapeON = !escapeON;
       }
     }
     else if(query[i] == '\'') {
       if(indoublequotes) {
+        temp+=query[i];
+      }
+      else if(escapeON) {
+        escapeON = !escapeON;
         temp+=query[i];
       }
       else {
@@ -49,11 +69,18 @@ vector<string> tokenize(string& query) {
       if(insinglequotes) {
         temp+=query[i];
       }
+      else if(escapeON) {
+        escapeON = !escapeON;
+        temp+=query[i];
+      }
       else {
         indoublequotes = !indoublequotes;
       }
     }
     else {
+      if(escapeON) {
+        escapeON = !escapeON;
+      }
       temp+=query[i];
     }
   }
@@ -61,6 +88,9 @@ vector<string> tokenize(string& query) {
   if(temp.size()) {
     if(insinglequotes) {
       tokens.emplace_back("\'"+temp);
+    }
+    else if(indoublequotes) {
+      tokens.emplace_back("\""+temp);
     }
     else {
       tokens.emplace_back(temp);
