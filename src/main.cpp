@@ -290,10 +290,11 @@ int main() {
         }
 
         while(getline(File,line)) {
-          str+=line + '\n';
+          str+=line;
         }
         File.close();
       }
+      str+='\n';
     }
     else if(tokens[0] == "type") {
       for(int i=1 ; i<maxIDX ;i++) {
