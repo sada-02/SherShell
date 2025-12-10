@@ -213,7 +213,7 @@ int main() {
 
   while(true) {
     cout << "$ ";
-    bool append = false , overWrite = false , directop = false, stderrRedirect = false;
+    bool append = false , overWrite = false , directop = false, directerr = false;
     string cmd , str = "" , errorstr = "";
     getline(cin,cmd);
 
@@ -229,15 +229,18 @@ int main() {
         maxIDX = i;
         directop = true;
         if(tokens[i] == "2>") {
-          stderrRedirect = true;
+          directerr = true;
         }
         break;
       }
-      else if(tokens[i] == ">>") {
+      else if(tokens[i] == ">>" || tokens[i] == "1>>" || tokens[i] == "2>>") {
         append = true;
         outputFilePath = tokens[i+1];
         maxIDX = i;
         directop = true;
+        if(tokens[i] == "2>>") {
+          directerr = true;
+        }
         break;
       }
     }
@@ -403,7 +406,7 @@ int main() {
     else {
       fs::path outputFile = createPathTo(outputFilePath);
 
-      if(stderrRedirect) {
+      if(directerr) {
         if(str.size()) {
           cout<<str;
         }
