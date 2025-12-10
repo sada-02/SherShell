@@ -402,7 +402,7 @@ int main() {
 
       if(directop) {
         if(errorstr.size()) {
-          cout<<errorstr;
+          cerr<<errorstr;
         }
 
         if(overWrite) {
