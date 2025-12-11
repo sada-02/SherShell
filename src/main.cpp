@@ -577,10 +577,12 @@ int main() {
     else if(tokens[0] == "history") {
       int i = HISTORY.size();
       fs::path p ;
+      bool givenLen = false , readMode = false;
 
       for(int j=1 ;j<tokens.size() ;j++) {
         if(is_number(tokens[j])) {
           i = i-stoi(tokens[j])+1;
+          givenLen = true;
         }
         else if(tokens[j][0] == '-') {
           for(int k=1 ;k<tokens[j].size() ;k++) extensions.push_back(tokens[j][k]);
@@ -592,8 +594,11 @@ int main() {
         }
       }
 
+      if(!givenLen) i = 1;
+
       for(char c : extensions) {
         if(c == 'r') {
+          readMode = true;
           fstream File(p.string());
           string lines;
           int j = HISTORY.size()+1;
@@ -603,7 +608,7 @@ int main() {
         }
       }
 
-      if(extensions.empty()) {
+      if(!readMode) {
         for(;i<=HISTORY.size();i++) {
           str+=to_string(i)+"  "+HISTORY[i-1]+"\n";
         }
