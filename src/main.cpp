@@ -577,7 +577,7 @@ int main() {
     else if(tokens[0] == "history") {
       int i = HISTORY.size();
       fs::path p ;
-      bool givenLen = false , readMode = false;
+      bool givenLen = false , readMode = false , makeFile = false;
 
       for(int j=1 ;j<tokens.size() ;j++) {
         if(is_number(tokens[j])) {
@@ -585,11 +585,17 @@ int main() {
           givenLen = true;
         }
         else if(tokens[j][0] == '-') {
-          for(int k=1 ;k<tokens[j].size() ;k++) extensions.push_back(tokens[j][k]);
+          for(int k=1 ;k<tokens[j].size() ;k++) {
+            extensions.push_back(tokens[j][k]);
+            if(tokens[j][k] == 'w') makeFile = true;
+          }
         }
         else {
           if(fs::exists(fs::path(tokens[j]))) {
             p = fs::path(tokens[j]);
+          }
+          else if(makeFile) {
+            p = createPathTo(tokens[j]);
           }
         }
       }
@@ -601,10 +607,18 @@ int main() {
           readMode = true;
           fstream File(p.string());
           string lines;
-          int j = HISTORY.size()+1;
           while(getline(File,lines)) {
             HISTORY.push_back(lines);
           }
+          File.close();
+        }
+        else if(c == 'w') {
+          readMode = true;
+          ofstream File(p.string());
+          for(const string& s : HISTORY) {
+            File<<s.substr(3)+"\n";
+          }
+          File.close();
         }
       }
 
