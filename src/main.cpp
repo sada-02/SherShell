@@ -630,9 +630,6 @@ int main() {
               File<<HISTORY[j-1]+"\n";
             }
             File.close();
-            lastAppend = currHistPtr;
-          }
-          else {
             lastAppend = currHistPtr+1;
           }
         }
