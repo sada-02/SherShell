@@ -80,11 +80,10 @@ string HOME;
 #endif
 
 struct TrieNode {
-  vector<TrieNode*> ptrs;
+  map<char,TrieNode*> ptrs;
   bool flag;
 
   TrieNode() {
-    ptrs.resize(26 , nullptr);
     flag = false;
   }
 
@@ -103,12 +102,11 @@ class Trie {
     TrieNode* temp = root;
 
     for(int i=0 ;i<str.size() ;i++) {
-      int idx = str[i]-'a';
-      if(!temp->ptrs[idx]) {
-        temp->ptrs[idx] = new TrieNode();
+      if(temp->ptrs.find(str[i]) == temp->ptrs.end()) {
+        temp->ptrs[str[i]] = new TrieNode();
       }
 
-      temp = temp->ptrs[idx];
+      temp = temp->ptrs[str[i]];
     }
 
     temp->flag = true;
@@ -118,12 +116,11 @@ class Trie {
     TrieNode* temp = root;
 
     for(int i=0 ;i<str.size() ;i++) {
-      int idx = str[i]-'a';
-      if(!temp->ptrs[idx]) {
+      if(temp->ptrs.find(str[i]) == temp->ptrs.end()) {
         return false;
       }
 
-      temp = temp->ptrs[idx];
+      temp = temp->ptrs[str[i]];
     }
 
     return temp->flag;
@@ -134,30 +131,20 @@ class Trie {
 
     TrieNode* temp = root;
     for(int i=0 ;i<str.size() ;i++) {
-      int idx = str[i]-'a';
-      if(!temp->ptrs[idx]) {
+      if(temp->ptrs.find(str[i]) == temp->ptrs.end()) {
         return str;
       }
 
-      temp = temp->ptrs[idx];
+      temp = temp->ptrs[str[i]];
     }
 
     string found = str ;
     while(temp && !temp->flag) {
       int idx = -1;
-      for(int i=0 ;i<26 ;i++) {
-        if(temp->ptrs[i]) {
-          if(idx != -1) {
-            return str;
-          }
-          else {
-            idx = i;
-          }
-        }
-      }
+      if(temp->ptrs.size() > 1) return str;
 
-      temp = temp->ptrs[idx];
-      found+=char('a'+idx);
+      found+=temp->ptrs.begin()->first;
+      temp = temp->ptrs.begin()->second;
     }
 
     if(!temp) return str;
