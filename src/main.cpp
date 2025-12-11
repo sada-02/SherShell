@@ -616,7 +616,7 @@ int main() {
           readMode = true;
           ofstream File(p.string());
           for(const string& s : HISTORY) {
-            File<<s.substr(3)+"\n";
+            File<<s+"\n";
           }
           File.close();
         }
