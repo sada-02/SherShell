@@ -30,6 +30,7 @@ vector<char> specialChars = {'\"','\\','$','`'};
 string PATH;
 string HOME;
 vector<string> HISTORY;
+int currHistPtr ;
 
 #ifdef _WIN32
   DWORD orig_mode;
@@ -309,6 +310,7 @@ string longestCommonPrefix(vector<string>& words) {
   return lcp;
 }
 
+
 string readCommand() {
   string cmd = "" , temp = "";
   char c ;
@@ -322,6 +324,37 @@ string readCommand() {
       temp = "";
       cout<<'\n'<<flush;
       break;
+    }
+    else if(c == '\x1b') {
+      char seq1 = getChar();
+      char seq2 = getChar();
+      
+      if(seq1 == '[') {
+        if(seq2 == 'A') {
+          if(currHistPtr > 0 && HISTORY.size() > 0) {
+            for(int i=0; i<temp.size()+cmd.size(); i++) cout<<"\b \b";
+            currHistPtr--;
+            cmd = HISTORY[currHistPtr];
+            cout<<cmd<<flush;
+            temp = "";
+          }
+        }
+        else if(seq2 == 'B') {
+          if(currHistPtr < HISTORY.size()) {
+            for(int i=0; i<temp.size()+cmd.size(); i++) cout<<"\b \b";
+            currHistPtr++;
+            if(currHistPtr >= HISTORY.size()) {
+              cmd = "";
+              temp = "";
+            } 
+            else {
+              cmd = HISTORY[currHistPtr];
+              cout<<cmd<<flush;
+              temp = "";
+            }
+          }
+        }
+      }
     }
     else if(c == ' ') {
       cmd += temp + " ";
@@ -492,6 +525,7 @@ int main() {
   HOME = getenv("HOME");
 
   enableRawMode();
+  currHistPtr=0;
 
   while(true) {
     cout << "$ ";
@@ -500,6 +534,8 @@ int main() {
     cmd = readCommand();
 
     HISTORY.emplace_back(cmd);
+    currHistPtr = HISTORY.size();
+
     vector<string> tokens = tokenize(cmd);
     if(tokens.empty()) continue;
     int maxIDX = tokens.size();
