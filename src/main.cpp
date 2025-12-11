@@ -279,7 +279,7 @@ string findExecWith(const string& str) {
         if((perms & fs::perms::owner_exec) != fs::perms::none ||
           (perms & fs::perms::group_exec) != fs::perms::none ||
           (perms & fs::perms::others_exec) != fs::perms::none) {
-          executablePaths->insert(d.path().stem().string());    
+          executablePaths->insert(d.path().filename().string());    
         }
       }
     } 
