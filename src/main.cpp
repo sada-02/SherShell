@@ -138,7 +138,7 @@ class Trie {
       temp = temp->ptrs[str[i]];
     }
 
-    vector<string> found ;
+    vector<string> found = {};
     for(auto const& part : temp->ptrs) {
       vector<string> t = findALL(part.second,str+part.first) ;
       found.insert(found.end() , t.begin() , t.end());
@@ -318,12 +318,18 @@ string readCommand() {
       t.clear();
       sort(words.begin() , words.end());
 
-      if(words.size() == 1 && *words.begin() != temp) {
-        for(int i=0 ;i<temp.size() ;i++) cout<<"\b \b";
-        cmd += *words.begin() + " ";
-        cout<<*words.begin()<<' '<<flush;
-        temp = "";
-        onetab = false;
+      if(words.size() == 1) {
+        if(*words.begin() == temp) {
+          cout<<'\a'<<flush;
+          onetab = true;
+        }
+        else {
+          for(int i=0 ;i<temp.size() ;i++) cout<<"\b \b";
+          cmd += *words.begin() + " ";
+          cout<<*words.begin()<<' '<<flush;
+          temp = "";
+          onetab = false;
+        }
       }
       else {
         if(onetab) {
