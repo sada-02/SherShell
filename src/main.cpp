@@ -29,11 +29,12 @@ vector<string> defaultcmds = {"echo" , "exit" , "type" , "pwd" , "cd" , "ls" ,
 vector<char> specialChars = {'\"','\\','$','`'};
 string PATH;
 string HOME;
+string HISTORYFILE;
 vector<string> HISTORY;
 int currHistPtr ;
 vector<char> extensions;
 int lastAppend;
-string HISTORYFILE;
+
 
 #ifdef _WIN32
   DWORD orig_mode;
@@ -531,14 +532,14 @@ int main() {
   for(const string& str : defaultcmds) checkAutoCompletion->insert(str);
   PATH = getenv("PATH");
   HOME = getenv("HOME");
-
-  HISTORYFILE = getenv("HISTFILE");
-  fstream histFile(HISTORYFILE);
-  string lines;
-  while(getline(histFile,lines)) {
-    HISTORY.push_back(lines);
+  HISTORY = getenv("HISTFILE");
+  fs::path histFilePath = createPathTo(HISTORY);
+  fstream hfile(histFilePath.string());
+  string hlines;
+  while(getline(hfile,hlines)) {
+    HISTORY.push_back(hlines);
   }
-  histFile.close();
+  hfile.close();
 
   enableRawMode();
   currHistPtr=0;
