@@ -533,8 +533,13 @@ int main() {
     }
     else if(tokens[0] == "history") {
       int i = 1;
-      for(const string& s : HISTORY) {
-        str+=to_string(i)+"  "+s+"\n";
+
+      if(tokens.size() == 2) {
+        i = i+stoi(tokens[1]);
+      }
+
+      for(;i<HISTORY.size()+1;i++) {
+        str+=to_string(i)+"  "+HISTORY[i-1]+"\n";
         i++;
       }
     }
