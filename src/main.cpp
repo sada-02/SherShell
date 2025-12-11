@@ -341,11 +341,13 @@ string readCommand() {
       }
       else if(words.size() > 1) {
         string lcp = longestCommonPrefix(words);
-        for(int i=0 ;i<temp.size() ;i++) cout<<"\b \b";
-        cout<<lcp<<flush;
-        temp = lcp;
-        onetab = false;
-        continue;
+        if(lcp != temp) {
+          for(int i=0 ;i<temp.size() ;i++) cout<<"\b \b";
+          cout<<lcp<<flush;
+          temp = lcp;
+          onetab = false;
+          continue;
+        }
       }
 
       words = findExecWith(temp);
@@ -360,11 +362,13 @@ string readCommand() {
       }
       else if(words.size() > 1) {
         string lcp = longestCommonPrefix(words);
-        for(int i=0 ;i<temp.size() ;i++) cout<<"\b \b";
-        cout<<lcp<<flush;
-        temp = lcp;
-        onetab = false;
-        continue;
+        if(lcp != temp) {
+          for(int i=0 ;i<temp.size() ;i++) cout<<"\b \b";
+          cout<<lcp<<flush;
+          temp = lcp;
+          onetab = false;
+          continue;
+        }
       }
 
       if(onetab) {
