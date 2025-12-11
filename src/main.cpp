@@ -31,6 +31,7 @@ string PATH;
 string HOME;
 vector<string> HISTORY;
 int currHistPtr ;
+vector<char> extensions;
 
 #ifdef _WIN32
   DWORD orig_mode;
@@ -81,6 +82,12 @@ int currHistPtr ;
     return c;
   }
 #endif
+
+bool is_number(const string& s) {
+    string::const_iterator it = s.begin();
+    while (it != s.end() && isdigit(*it)) ++it;
+    return !s.empty() && it == s.end();
+}
 
 struct TrieNode {
   map<char,TrieNode*> ptrs;
@@ -309,7 +316,6 @@ string longestCommonPrefix(vector<string>& words) {
 
   return lcp;
 }
-
 
 string readCommand() {
   string cmd = "" , temp = "";
@@ -569,16 +575,37 @@ int main() {
     }
     else if(tokens[0] == "history") {
       int i = HISTORY.size();
+      fs::path p ;
 
-      if(tokens.size() == 2) {
-        i = i-stoi(tokens[1])+1;
-      }
-      else {
-        i = 1;
+      for(int j=1 ;j<tokens.size() ;j++) {
+        if(is_number(tokens[j])) {
+          i = i-stoi(tokens[j])+1;
+        }
+        else if(tokens[j][0] == '-') {
+          for(int k=1 ;k<tokens[j].size() ;k++) extensions.push_back(tokens[j][k]);
+        }
+        else {
+          if(fs::exists(fs::path(tokens[j]))) {
+            p = fs::path(tokens[j]);
+          }
+        }
       }
 
-      for(;i<=HISTORY.size();i++) {
-        str+=to_string(i)+"  "+HISTORY[i-1]+"\n";
+      for(char c : extensions) {
+        if(c == 'r') {
+          fstream File(p.string());
+          string lines;
+          int j = HISTORY.size()+1;
+          while(getline(File,lines)) {
+            HISTORY.push_back(j + "  " + lines);
+          }
+        }
+      }
+
+      if(!extensions.empty()) {
+        for(;i<=HISTORY.size();i++) {
+          str+=to_string(i)+"  "+HISTORY[i-1]+"\n";
+        }
       }
     }
     else if(tokens[0] == "ls") {
