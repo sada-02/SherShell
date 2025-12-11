@@ -329,9 +329,10 @@ string readCommand() {
         if(onetab) {
           cout<<'\n';
           for(const string& s : words) {
-            cout<<s<<"  ";
+            if(s != temp) cout<<s<<"  ";
           }
-          cout<<'\n'<<'$ '<<cmd<<flush;
+          cout<<'\n'<<flush;
+          cout<<"$ "<<cmd<<flush;
           onetab = false;
         }
         else {
