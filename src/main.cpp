@@ -263,6 +263,31 @@ vector<string> tokenize(string& query) {
   return tokens;
 }
 
+string findExecWith(const string& str) {
+  Trie* executablePaths = new Trie();
+  string dir;
+  stringstream path(PATH);
+
+  while(getline(path , dir , delimiter)) {
+    if(!fs::exists(fs::path(dir)) || !fs::is_directory(fs::path(dir))) continue;
+
+    for(const auto& d : fs::directory_iterator(dir)) {
+      if(fs::is_directory(d.path())) continue;
+      
+      auto perms = fs::status(d.path()).permissions();
+      if((perms & fs::perms::owner_exec) != fs::perms::none ||
+        (perms & fs::perms::group_exec) != fs::perms::none ||
+        (perms & fs::perms::others_exec) != fs::perms::none) {
+        executablePaths->insert(d.path().filename().string());    
+      }
+    }
+  }
+
+  string ret = executablePaths->startWith(str);
+  delete executablePaths;
+  return ret;
+}
+
 string readCommand() {
   string cmd = "" , temp = "";
   char c ;
@@ -315,31 +340,6 @@ string readCommand() {
   if(temp.size()) cmd+=temp;
 
   return cmd;
-}
-
-string findExecWith(const string& str) {
-  Trie* executablePaths = new Trie();
-  string dir;
-  stringstream path(PATH);
-
-  while(getline(path , dir , delimiter)) {
-    if(!fs::exists(fs::path(dir)) || !fs::is_directory(fs::path(dir))) continue;
-
-    for(const auto& d : fs::directory_iterator(dir)) {
-      if(fs::is_directory(d.path())) continue;
-      
-      auto perms = fs::status(d.path()).permissions();
-      if((perms & fs::perms::owner_exec) != fs::perms::none ||
-        (perms & fs::perms::group_exec) != fs::perms::none ||
-        (perms & fs::perms::others_exec) != fs::perms::none) {
-        executablePaths->insert(d.path().filename().string());    
-      }
-    }
-  }
-
-  string ret = executablePaths->startWith(str);
-  delete executablePaths;
-  return ret;
 }
 
 fs::path checkExec(const string& leftOver) {
