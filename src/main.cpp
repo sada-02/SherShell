@@ -533,14 +533,17 @@ int main() {
   PATH = getenv("PATH");
   HOME = getenv("HOME");
   HISTORYFILE = getenv("HISTFILE");
-  fs::path histFilePath = createPathTo(HISTORYFILE);
-  fstream hfile(histFilePath.string());
-  string hlines;
-  while(getline(hfile,hlines)) {
-    HISTORY.push_back(hlines);
-  }
-  hfile.close();
 
+  if(HISTORYFILE.size()) {
+    fs::path histFilePath = createPathTo(HISTORYFILE);
+    fstream hfile(histFilePath.string());
+    string hlines;
+    while(getline(hfile,hlines)) {
+      HISTORY.push_back(hlines);
+    }
+    hfile.close();
+  }
+  
   enableRawMode();
   currHistPtr=0;
   lastAppend = 1;
