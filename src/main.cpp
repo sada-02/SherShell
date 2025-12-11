@@ -33,6 +33,7 @@ vector<string> HISTORY;
 int currHistPtr ;
 vector<char> extensions;
 int lastAppend;
+string HISTORYFILE;
 
 #ifdef _WIN32
   DWORD orig_mode;
@@ -530,6 +531,14 @@ int main() {
   for(const string& str : defaultcmds) checkAutoCompletion->insert(str);
   PATH = getenv("PATH");
   HOME = getenv("HOME");
+
+  HISTORYFILE = getenv("HISTFILE");
+  fstream histFile(p.string());
+  string lines;
+  while(getline(histFile,lines)) {
+    HISTORY.push_back(lines);
+  }
+  histFile.close();
 
   enableRawMode();
   currHistPtr=0;
