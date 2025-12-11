@@ -166,13 +166,13 @@ class Trie {
     tree->insert(words[0]);
     
     for(int i=1 ;i<words.size() ;i++) {
-      TrieNode* root = tree->root , prev = NULL;
+      TrieNode* root = tree->root , *prev = NULL;
       char lastchar = 'a';
       for(int j=0 ;root && j<words[0].size() ;j++) {
         if(root->ptrs.find(words[i][j]) != root->ptrs.end()) {
           prev = root;
           lastchar = words[i][j];
-          root = root->ptrs;
+          root = root->ptrs[words[i][j]];
         }
         else {
           prev->ptrs[lastchar] = NULL;
