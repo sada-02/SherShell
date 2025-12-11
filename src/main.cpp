@@ -162,7 +162,7 @@ class Trie {
   }
 
   string longestCommonPrefix(vector<string>& words) {
-    Trie* tree;
+    Trie* tree = new Trie();
     tree->insert(words[0]);
     
     for(int i=1 ;i<words.size() ;i++) {
