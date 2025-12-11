@@ -534,9 +534,10 @@ int main() {
   HOME = getenv("HOME");
 
   char* histfileEnv = getenv("HISTFILE");
+  fs::path histFilePath;
   if(histfileEnv != nullptr) {
     HISTORYFILE = string(histfileEnv);
-    fs::path histFilePath = createPathTo(HISTORYFILE);
+    histFilePath = createPathTo(HISTORYFILE);
     if(fs::exists(histFilePath)) {
       fstream hfile(histFilePath.string());
       string hlines;
@@ -590,6 +591,13 @@ int main() {
     }
 
     if(cmd == "exit") {
+      if(histfileEnv) {
+        ofstream File(histFilePath.string());
+        for(const string& s : HISTORY) {
+          File<<s+"\n";
+        }
+        File.close();
+      }
       break;
     }
     else if(tokens[0] == "history") {
