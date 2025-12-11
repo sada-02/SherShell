@@ -32,6 +32,7 @@ string HOME;
 vector<string> HISTORY;
 int currHistPtr ;
 vector<char> extensions;
+int lastAppend;
 
 #ifdef _WIN32
   DWORD orig_mode;
@@ -532,6 +533,7 @@ int main() {
 
   enableRawMode();
   currHistPtr=0;
+  lastAppend = 1;
 
   while(true) {
     cout << "$ ";
@@ -619,6 +621,15 @@ int main() {
             File<<s+"\n";
           }
           File.close();
+        }
+        else if(c == 'a') {
+          readMode = true;
+          ofstream File(p.string(),ios::app);
+          for(int j=lastAppend ;j<=HISTORY.size() ;j++) {
+            File<<HISTORY[j-1]+"\n";
+          }
+          File.close();
+          lastAppend = currHistPtr;
         }
       }
 
