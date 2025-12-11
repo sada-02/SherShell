@@ -597,12 +597,12 @@ int main() {
           string lines;
           int j = HISTORY.size()+1;
           while(getline(File,lines)) {
-            HISTORY.push_back(j + "  " + lines);
+            HISTORY.push_back(stoi(j) + "  " + lines);
           }
         }
       }
 
-      if(!extensions.empty()) {
+      if(extensions.empty()) {
         for(;i<=HISTORY.size();i++) {
           str+=to_string(i)+"  "+HISTORY[i-1]+"\n";
         }
