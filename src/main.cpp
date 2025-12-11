@@ -10,19 +10,162 @@ using namespace std;
 namespace fs = filesystem;
 
 #ifdef _WIN32
+  #include <conio.h>   
+  #include <windows.h>
   const char delimiter = ';';
   const char pathDelimiter = '/';
 
 #else
   const char delimiter = ':';
   const char pathDelimiter = '/';
+  #include <termios.h>
+  #include <unistd.h>
 #endif
 
 map<string,string> commands;
-vector<string> builtins = {"echo" , "exit" , "type" , "pwd" ,"cd"};
+vector<string> builtins = {"echo" , "exit" , "type" , "pwd" , "cd"};
+vector<string> defaultcmds = {"echo" , "exit" , "type" , "pwd" , "cd" , "cat" , "ls"};
 vector<char> specialChars = {'\"','\\','$','`'};
 string PATH;
 string HOME;
+
+#ifdef _WIN32
+  DWORD orig_mode;
+  HANDLE hStdin;
+
+  void disableRawMode() {
+    SetConsoleMode(hStdin, orig_mode);
+  }
+
+  void enableRawMode() {
+    hStdin = GetStdHandle(STD_INPUT_HANDLE);
+    GetConsoleMode(hStdin, &orig_mode);
+    
+    DWORD mode = orig_mode;
+    mode &= ~(ENABLE_LINE_INPUT | ENABLE_ECHO_INPUT);
+    mode |= ENABLE_PROCESSED_INPUT;
+    
+    SetConsoleMode(hStdin, mode);
+    atexit(disableRawMode);
+  }
+
+  char getChar() {
+    return _getch();
+  }
+
+#else
+  struct termios orig_termios;
+
+  void disableRawMode() {
+    tcsetattr(STDIN_FILENO, TCSAFLUSH, &orig_termios);
+  }
+
+  void enableRawMode() {
+    tcgetattr(STDIN_FILENO, &orig_termios);
+    atexit(disableRawMode);
+    
+    struct termios raw = orig_termios;
+    raw.c_lflag &= ~(ICANON | ECHO);
+    raw.c_cc[VMIN] = 1;
+    raw.c_cc[VTIME] = 0;
+    
+    tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw);
+  }
+
+  char getChar() {
+    char c;
+    read(STDIN_FILENO, &c, 1);
+    return c;
+  }
+#endif
+
+struct TrieNode {
+  vector<TrieNode*> ptrs;
+  bool flag;
+
+  TrieNode() {
+    ptrs.resize(26 , nullptr);
+    flag = false;
+  }
+
+};
+
+class Trie {
+  private :
+  TrieNode* root ;
+
+  public :
+  Trie() {
+    root = new TrieNode();
+  }
+
+  void insert(const string& str) {
+    TrieNode* temp = root;
+
+    for(int i=0 ;i<str.size() ;i++) {
+      int idx = str[i]-'a';
+      if(!temp->ptrs[idx]) {
+        temp->ptrs[idx] = new TrieNode();
+      }
+
+      temp = temp->ptrs[idx];
+    }
+
+    temp->flag = true;
+  }
+
+  bool search(const string& str) {
+    TrieNode* temp = root;
+
+    for(int i=0 ;i<str.size() ;i++) {
+      int idx = str[i]-'a';
+      if(!temp->ptrs[idx]) {
+        return false;
+      }
+
+      temp = temp->ptrs[idx];
+    }
+
+    return temp->flag;
+  }
+
+  string startWith(const string& str) {
+    if(!str.size()) return str;
+
+    TrieNode* temp = root;
+    for(int i=0 ;i<str.size() ;i++) {
+      int idx = str[i]-'a';
+      if(!temp->ptrs[idx]) {
+        return str;
+      }
+
+      temp = temp->ptrs[idx];
+    }
+
+    string found = str ;
+    while(temp && !temp->flag) {
+      int idx = -1;
+      for(int i=0 ;i<26 ;i++) {
+        if(temp->ptrs[i]) {
+          if(idx != -1) {
+            return str;
+          }
+          else {
+            idx = i;
+          }
+        }
+      }
+
+      temp = temp->ptrs[idx];
+      found+=char('a'+idx);
+    }
+
+    if(!temp) return str;
+    else return found;
+  }
+};
+
+Trie* checkAutoCompletion = new Trie();
 
 vector<string> tokenize(string& query) {
   vector<string> tokens ;
@@ -120,6 +263,45 @@ vector<string> tokenize(string& query) {
   return tokens;
 }
 
+string readCommand() {
+  string cmd = "" , temp = "";
+  char c ;
+
+
+  while(true) {
+    c = getChar();
+
+    if(c == '\n' || c == '\r') {
+      cmd = cmd + temp;
+      temp = "";
+      cout<<'\n'<<flush;
+      break;
+    }
+    else if(c == ' ') {
+      cmd += temp + " ";
+      temp = "";
+      cout<<' '<<flush;
+    }
+    else if(c == '\t') {
+      string word = checkAutoCompletion->startWith(temp);
+      if(word.size() && word != temp) {
+        for(int i=0 ;i<temp.size() ;i++) cout<<"\b \b";
+        cmd += word + " ";
+        cout<<word<<' '<<flush;
+        temp = "";
+      }
+    }
+    else {
+      temp += c;
+      cout<<c<<flush;
+    }
+  }
+
+  if(temp.size()) cmd+=temp;
+
+  return cmd;
+}
+
 fs::path checkExec(const string& leftOver) {
   string dir;
   stringstream path(PATH);
@@ -208,14 +390,17 @@ int main() {
   cerr<<unitbuf;
 
   for(const string& str : builtins) commands[str] = "sh";
+  for(const string& str : defaultcmds) checkAutoCompletion->insert(str);
   PATH = getenv("PATH");
   HOME = getenv("HOME");
+
+  enableRawMode();
 
   while(true) {
     cout << "$ ";
     bool append = false , overWrite = false , directop = false, directerr = false;
     string cmd , str = "" , errorstr = "";
-    getline(cin,cmd);
+    cmd = readCommand();
 
     vector<string> tokens = tokenize(cmd);
     if(tokens.empty()) continue;
