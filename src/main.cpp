@@ -290,6 +290,9 @@ string readCommand() {
         cout<<word<<' '<<flush;
         temp = "";
       }
+      else if(word == temp) {
+        cout<<'\x07'<<flush;
+      }
     }
     else {
       temp += c;
