@@ -629,7 +629,7 @@ int main() {
             File<<HISTORY[j-1]+"\n";
           }
           File.close();
-          lastAppend = currHistPtr;
+          lastAppend = HISTORY.size();
         }
       }
 
