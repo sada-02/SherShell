@@ -126,29 +126,40 @@ class Trie {
     return temp->flag;
   }
 
-  string startWith(const string& str) {
-    if(!str.size()) return str;
+  vector<string> startWith(const string& str) {
+    if(!str.size()) return vector<string> {str};
 
     TrieNode* temp = root;
     for(int i=0 ;i<str.size() ;i++) {
       if(temp->ptrs.find(str[i]) == temp->ptrs.end()) {
-        return str;
+        return vector<string> {str};
       }
 
       temp = temp->ptrs[str[i]];
     }
 
-    string found = str ;
-    while(temp && !temp->flag) {
-      int idx = -1;
-      if(temp->ptrs.size() > 1) return str;
-
-      found+=temp->ptrs.begin()->first;
-      temp = temp->ptrs.begin()->second;
+    vector<string> found ;
+    for(auto const& part : temp->ptrs) {
+      vector<string> t = findALL(part.second,str+part.first) ;
+      found.insert(found.end() , t.begin() , t.end());
+      t.clear();
     }
 
-    if(!temp) return str;
+    if(found.empty()) return vector<string> {str};
     else return found;
+  }
+
+  vector<string> findALL(TrieNode* temp , string str) {
+    vector<string> found ;
+    if(temp->flag) found.push_back(str);
+
+    for(auto const& part : temp->ptrs) {
+      vector<string> t = findALL(part.second,str+part.first) ;
+      found.insert(found.end() , t.begin() , t.end());
+      t.clear();
+    }
+
+    return found;
   }
 };
 
@@ -250,7 +261,7 @@ vector<string> tokenize(string& query) {
   return tokens;
 }
 
-string findExecWith(const string& str) {
+vector<string> findExecWith(const string& str) {
   Trie* executablePaths = new Trie();
   string dir;
   stringstream path(PATH);
@@ -275,7 +286,7 @@ string findExecWith(const string& str) {
     }
   }
 
-  string ret = executablePaths->startWith(str);
+  vector<string> ret = executablePaths->startWith(str);
   delete executablePaths;
   return ret;
 }
@@ -283,6 +294,7 @@ string findExecWith(const string& str) {
 string readCommand() {
   string cmd = "" , temp = "";
   char c ;
+  bool onetab = false;
 
   while(true) {
     c = getChar();
@@ -297,31 +309,41 @@ string readCommand() {
       cmd += temp + " ";
       temp = "";
       cout<<' '<<flush;
+      onetab = false;
     }
     else if(c == '\t') {
-      string word = checkAutoCompletion->startWith(temp);
-      if(word.size() && word != temp) {
+      vector<string> words = checkAutoCompletion->startWith(temp);
+      vector<string> t = findExecWith(temp);
+      words.insert(words.end() , t.begin() , t.end());
+      t.clear();
+      sort(words.begin() , words.end());
+
+      if(words.size() == 1 && *words.begin() != temp) {
         for(int i=0 ;i<temp.size() ;i++) cout<<"\b \b";
-        cmd += word + " ";
-        cout<<word<<' '<<flush;
+        cmd += *words.begin() + " ";
+        cout<<*words.begin()<<' '<<flush;
         temp = "";
+        onetab = false;
       }
       else {
-        word = findExecWith(temp);
-        if(word.size() && word != temp) {
-          for(int i=0 ;i<temp.size() ;i++) cout<<"\b \b";
-          cmd += word + " ";
-          cout<<word<<' '<<flush;
-          temp = "";
+        if(onetab) {
+          cout<<'\n';
+          for(const string& s : words) {
+            cout<<s<<"  ";
+          }
+          cout<<'\n'<<'$ '<<cmd<<flush;
+          onetab = false;
         }
         else {
           cout<<'\x07'<<flush;
+          onetab = true;
         }
-      }
+      } 
     }
     else {
       temp += c;
       cout<<c<<flush;
+      onetab = false;
     }
   }
 
