@@ -35,7 +35,6 @@ int currHistPtr ;
 vector<char> extensions;
 int lastAppend;
 
-
 #ifdef _WIN32
   DWORD orig_mode;
   HANDLE hStdin;
@@ -87,9 +86,9 @@ int lastAppend;
 #endif
 
 bool is_number(const string& s) {
-    string::const_iterator it = s.begin();
-    while (it != s.end() && isdigit(*it)) ++it;
-    return !s.empty() && it == s.end();
+  string::const_iterator it = s.begin();
+  while (it != s.end() && isdigit(*it)) ++it;
+  return !s.empty() && it == s.end();
 }
 
 struct TrieNode {
