@@ -533,7 +533,7 @@ int main() {
   HOME = getenv("HOME");
 
   HISTORYFILE = getenv("HISTFILE");
-  fstream histFile(p.string());
+  fstream histFile(HISTORYFILE);
   string lines;
   while(getline(histFile,lines)) {
     HISTORY.push_back(lines);
