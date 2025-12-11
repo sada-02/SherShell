@@ -127,12 +127,12 @@ class Trie {
   }
 
   vector<string> startWith(const string& str) {
-    if(!str.size()) return vector<string> {str};
+    if(!str.size()) return vector<string> {};
 
     TrieNode* temp = root;
     for(int i=0 ;i<str.size() ;i++) {
       if(temp->ptrs.find(str[i]) == temp->ptrs.end()) {
-        return vector<string> {str};
+        return vector<string> {};
       }
 
       temp = temp->ptrs[str[i]];
@@ -145,7 +145,7 @@ class Trie {
       t.clear();
     }
 
-    if(found.empty()) return vector<string> {str};
+    if(found.empty()) return vector<string> {};
     else return found;
   }
 
@@ -313,39 +313,41 @@ string readCommand() {
     }
     else if(c == '\t') {
       vector<string> words = checkAutoCompletion->startWith(temp);
-      vector<string> t = findExecWith(temp);
-      words.insert(words.end() , t.begin() , t.end());
-      t.clear();
       sort(words.begin() , words.end());
 
       if(words.size() == 1) {
-        if(*words.begin() == temp) {
-          cout<<'\a'<<flush;
-          onetab = true;
+        for(int i=0 ;i<temp.size() ;i++) cout<<"\b \b";
+        cmd += *words.begin() + " ";
+        cout<<*words.begin()<<' '<<flush;
+        temp = "";
+        onetab = false;
+        continue;
+      }
+
+      words = findExecWith(temp);
+      sort(words.begin() , words.end());
+      if(words.size() == 1) {
+        for(int i=0 ;i<temp.size() ;i++) cout<<"\b \b";
+        cmd += *words.begin() + " ";
+        cout<<*words.begin()<<' '<<flush;
+        temp = "";
+        onetab = false;
+        continue;
+      }
+
+      if(onetab) {
+        cout<<'\n';
+        for(const string& s : words) {
+          cout<<s<<"  ";
         }
-        else {
-          for(int i=0 ;i<temp.size() ;i++) cout<<"\b \b";
-          cmd += *words.begin() + " ";
-          cout<<*words.begin()<<' '<<flush;
-          temp = "";
-          onetab = false;
-        }
+        cout<<'\n'<<flush;
+        cout<<"$ "<<cmd+temp<<flush;
+        onetab = false;
       }
       else {
-        if(onetab) {
-          cout<<'\n';
-          for(const string& s : words) {
-            if(s != temp) cout<<s<<"  ";
-          }
-          cout<<'\n'<<flush;
-          cout<<"$ "<<cmd+temp<<flush;
-          onetab = false;
-        }
-        else {
-          cout<<'\x07'<<flush;
-          onetab = true;
-        }
-      } 
+        cout<<'\x07'<<flush;
+        onetab = true;
+      }
     }
     else {
       temp += c;
