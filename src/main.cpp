@@ -603,7 +603,7 @@ int main() {
           string lines;
           int j = HISTORY.size()+1;
           while(getline(File,lines)) {
-            HISTORY.push_back(to_string(j) + "  " + lines);
+            HISTORY.push_back(lines);
           }
         }
       }
