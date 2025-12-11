@@ -92,6 +92,18 @@ struct TrieNode {
 class Trie {
   private :
   TrieNode* root ;
+  vector<string> findALL(TrieNode* temp , string str) {
+    vector<string> found ;
+    if(temp->flag) found.push_back(str);
+
+    for(auto const& part : temp->ptrs) {
+      vector<string> t = findALL(part.second,str+part.first) ;
+      found.insert(found.end() , t.begin() , t.end());
+      t.clear();
+    }
+
+    return found;
+  }
 
   public :
   Trie() {
@@ -149,17 +161,35 @@ class Trie {
     else return found;
   }
 
-  vector<string> findALL(TrieNode* temp , string str) {
-    vector<string> found ;
-    if(temp->flag) found.push_back(str);
-
-    for(auto const& part : temp->ptrs) {
-      vector<string> t = findALL(part.second,str+part.first) ;
-      found.insert(found.end() , t.begin() , t.end());
-      t.clear();
+  string longestCommonPrefix(vector<string>& words) {
+    Trie* tree;
+    tree->insert(words[0]);
+    
+    for(int i=1 ;i<words.size() ;i++) {
+      TrieNode* root = tree->root , prev = NULL;
+      char lastchar = 'a';
+      for(int j=0 ;root && j<words[0].size() ;j++) {
+        if(root->ptrs.find(words[i][j]) != root->ptrs.end()) {
+          prev = root;
+          lastchar = words[i][j];
+          root = root->ptrs;
+        }
+        else {
+          prev->ptrs[lastchar] = NULL;
+          delete root;
+          break;
+        }
+      }
     }
 
-    return found;
+    string lcp = "";
+    TrieNode* root = tree->root;
+    while(root) {
+      lcp += root->ptrs.begin()->first;
+      root = root->ptrs.begin()->second;
+    }
+
+    return lcp;
   }
 };
 
@@ -323,6 +353,16 @@ string readCommand() {
         onetab = false;
         continue;
       }
+      else if(words.size() > 1) {
+        Trie* tp = new Trie();
+        string lcp = tp->longestCommonPrefix(words);
+        for(int i=0 ;i<temp.size() ;i++) cout<<"\b \b";
+        cout<<lcp<<flush;
+        temp = lcp;
+        onetab = false;
+        delete tp;
+        continue;
+      }
 
       words = findExecWith(temp);
       sort(words.begin() , words.end());
@@ -332,6 +372,16 @@ string readCommand() {
         cout<<*words.begin()<<' '<<flush;
         temp = "";
         onetab = false;
+        continue;
+      }
+      else if(words.size() > 1) {
+        Trie* tp = new Trie();
+        string lcp = tp->longestCommonPrefix(words);
+        for(int i=0 ;i<temp.size() ;i++) cout<<"\b \b";
+        cout<<lcp<<flush;
+        temp = lcp;
+        onetab = false;
+        delete tp;
         continue;
       }
 
