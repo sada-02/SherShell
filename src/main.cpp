@@ -535,6 +535,7 @@ int main() {
 
   while(true) {
     cout << "$ ";
+    extensions.clear();
     bool append = false , overWrite = false , directop = false, directerr = false;
     string cmd , str = "" , errorstr = "";
     cmd = readCommand();
