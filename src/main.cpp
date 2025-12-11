@@ -625,11 +625,16 @@ int main() {
         else if(c == 'a') {
           readMode = true;
           ofstream File(p.string(),ios::app);
-          for(int j=lastAppend ;j<=HISTORY.size() ;j++) {
-            File<<HISTORY[j-1]+"\n";
+          if(lastAppend+1 != currHistPtr) {
+            for(int j=lastAppend ;j<=HISTORY.size() ;j++) {
+              File<<HISTORY[j-1]+"\n";
+            }
+            File.close();
+            lastAppend = currHistPtr;
           }
-          File.close();
-          lastAppend = HISTORY.size();
+          else {
+            lastAppend = currHistPtr+1;
+          }
         }
       }
 
