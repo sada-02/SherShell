@@ -332,7 +332,7 @@ string readCommand() {
             if(s != temp) cout<<s<<"  ";
           }
           cout<<'\n'<<flush;
-          cout<<"$ "<<cmd<<flush;
+          cout<<"$ "<<cmd+temp<<flush;
           onetab = false;
         }
         else {
