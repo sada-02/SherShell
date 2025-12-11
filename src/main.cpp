@@ -161,36 +161,6 @@ class Trie {
     else return found;
   }
 
-  string longestCommonPrefix(vector<string>& words) {
-    Trie* tree = new Trie();
-    tree->insert(words[0]);
-    
-    for(int i=1 ;i<words.size() ;i++) {
-      TrieNode* root = tree->root , *prev = NULL;
-      char lastchar = 'a';
-      for(int j=0 ;root && j<words[0].size() ;j++) {
-        if(root->ptrs.find(words[i][j]) != root->ptrs.end()) {
-          prev = root;
-          lastchar = words[i][j];
-          root = root->ptrs[words[i][j]];
-        }
-        else {
-          prev->ptrs[lastchar] = NULL;
-          delete root;
-          break;
-        }
-      }
-    }
-
-    string lcp = "";
-    TrieNode* root = tree->root;
-    while(root) {
-      lcp += root->ptrs.begin()->first;
-      root = root->ptrs.begin()->second;
-    }
-
-    return lcp;
-  }
 };
 
 Trie* checkAutoCompletion = new Trie();
@@ -321,6 +291,20 @@ vector<string> findExecWith(const string& str) {
   return ret;
 }
 
+string longestCommonPrefix(vector<string>& words) {
+    string lcp = words[0];
+    for(int i=1 ;i<words.size() ;i++) {
+      for(int j=0 ;j<lcp.size() ;j++) {
+        if(words[i][j] != lcp[j]) {
+          lcp = lcp.substr(0,j+1);
+          break;
+        }
+      }
+    }  
+
+    return lcp;
+  }
+
 string readCommand() {
   string cmd = "" , temp = "";
   char c ;
@@ -354,13 +338,11 @@ string readCommand() {
         continue;
       }
       else if(words.size() > 1) {
-        Trie* tp = new Trie();
-        string lcp = tp->longestCommonPrefix(words);
+        string lcp = longestCommonPrefix(words);
         for(int i=0 ;i<temp.size() ;i++) cout<<"\b \b";
         cout<<lcp<<flush;
         temp = lcp;
         onetab = false;
-        delete tp;
         continue;
       }
 
@@ -375,13 +357,11 @@ string readCommand() {
         continue;
       }
       else if(words.size() > 1) {
-        Trie* tp = new Trie();
-        string lcp = tp->longestCommonPrefix(words);
+        string lcp = longestCommonPrefix(words);
         for(int i=0 ;i<temp.size() ;i++) cout<<"\b \b";
         cout<<lcp<<flush;
         temp = lcp;
         onetab = false;
-        delete tp;
         continue;
       }
 
