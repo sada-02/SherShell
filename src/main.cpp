@@ -538,9 +538,8 @@ int main() {
         i = i+stoi(tokens[1]);
       }
 
-      for(;i<HISTORY.size()+1;i++) {
+      for(;i<=HISTORY.size();i++) {
         str+=to_string(i)+"  "+HISTORY[i-1]+"\n";
-        i++;
       }
     }
     else if(tokens[0] == "ls") {
