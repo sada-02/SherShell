@@ -532,8 +532,8 @@ int main() {
   for(const string& str : defaultcmds) checkAutoCompletion->insert(str);
   PATH = getenv("PATH");
   HOME = getenv("HOME");
-  HISTORY = getenv("HISTFILE");
-  fs::path histFilePath = createPathTo(HISTORY);
+  HISTORYFILE = getenv("HISTFILE");
+  fs::path histFilePath = createPathTo(HISTORYFILE);
   fstream hfile(histFilePath.string());
   string hlines;
   while(getline(hfile,hlines)) {
