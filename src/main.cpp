@@ -532,10 +532,13 @@ int main() {
       break;
     }
     else if(tokens[0] == "history") {
-      int i = 1;
+      int i = HISTORY.size();
 
       if(tokens.size() == 2) {
-        i = i+stoi(tokens[1]);
+        i = i-stoi(tokens[1])+1;
+      }
+      else {
+        i = 1;
       }
 
       for(;i<=HISTORY.size();i++) {
