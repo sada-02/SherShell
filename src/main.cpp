@@ -24,7 +24,7 @@ namespace fs = filesystem;
 
 map<string,string> commands;
 vector<string> builtins = {"echo" , "exit" , "type" , "pwd" , "cd"};
-vector<string> defaultcmds = {"echo" , "exit" , "type" , "pwd" , "cd" , "cat" , "ls"};
+vector<string> defaultcmds = {"echo" , "exit" , "type" , "pwd" , "cd" , "ls"};
 vector<char> specialChars = {'\"','\\','$','`'};
 string PATH;
 string HOME;
@@ -289,8 +289,20 @@ string readCommand() {
         cmd += word + " ";
         cout<<word<<' '<<flush;
         temp = "";
+        continue;
       }
-      else if(word == temp) {
+      else {
+        word = findExecWith(temp);
+        if(word.size() && word != temp) {
+          for(int i=0 ;i<temp.size() ;i++) cout<<"\b \b";
+          cmd += word + " ";
+          cout<<word<<' '<<flush;
+          temp = "";
+          continue;
+        }
+      }
+
+      if(word == temp) {
         cout<<'\x07'<<flush;
       }
     }
@@ -303,6 +315,31 @@ string readCommand() {
   if(temp.size()) cmd+=temp;
 
   return cmd;
+}
+
+string findExecWith(const string& str) {
+  Trie* executablePaths = new Trie();
+  string dir;
+  stringstream path(PATH);
+
+  while(getline(path , dir , delimiter)) {
+    if(!fs::exists(fs::path(dir)) || !fs::is_directory(fs::path(dir))) continue;
+
+    for(const auto& d : fs::directory_iterator(dir)) {
+      if(fs::is_directory(d.path())) continue;
+      
+      auto perms = fs::status(d.path()).permissions();
+      if((perms & fs::perms::owner_exec) != fs::perms::none ||
+        (perms & fs::perms::group_exec) != fs::perms::none ||
+        (perms & fs::perms::others_exec) != fs::perms::none) {
+        executablePaths->insert(d.path().filename().string());    
+      }
+    }
+  }
+
+  string ret = executablePaths->startWith(str);
+  delete executablePaths;
+  return ret;
 }
 
 fs::path checkExec(const string& leftOver) {
