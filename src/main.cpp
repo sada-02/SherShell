@@ -532,16 +532,19 @@ int main() {
   for(const string& str : defaultcmds) checkAutoCompletion->insert(str);
   PATH = getenv("PATH");
   HOME = getenv("HOME");
-  HISTORYFILE = getenv("HISTFILE");
 
-  if(HISTORYFILE.size()) {
+  char* histfileEnv = getenv("HISTFILE");
+  if(histfileEnv != nullptr) {
+    HISTORYFILE = string(histfileEnv);
     fs::path histFilePath = createPathTo(HISTORYFILE);
-    fstream hfile(histFilePath.string());
-    string hlines;
-    while(getline(hfile,hlines)) {
-      HISTORY.push_back(hlines);
+    if(fs::exists(histFilePath)) {
+      fstream hfile(histFilePath.string());
+      string hlines;
+      while(getline(hfile,hlines)) {
+        HISTORY.push_back(hlines);
+      }
+      hfile.close();
     }
-    hfile.close();
   }
   
   enableRawMode();
