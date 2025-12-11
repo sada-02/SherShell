@@ -292,18 +292,20 @@ vector<string> findExecWith(const string& str) {
 }
 
 string longestCommonPrefix(vector<string>& words) {
-    string lcp = words[words.size()-1];
-    for(int i=1 ;i<words.size()-1 ;i++) {
-      for(int j=0 ;j<lcp.size() ;j++) {
-        if(words[i][j] != lcp[j]) {
-          lcp = lcp.substr(0,j+1);
-          break;
-        }
-      }
-    }  
+  if(words.empty()) return "";
 
-    return lcp;
-  }
+  string lcp = words[0];
+  for(int i=1 ;i<words.size() ;i++) {
+    for(int j=0 ;j<lcp.size() && j<words[i].size() ;j++) {
+      if(words[i][j] != lcp[j]) {
+        lcp = lcp.substr(0,j);
+        break;
+      }
+    }
+  }  
+
+  return lcp;
+}
 
 string readCommand() {
   string cmd = "" , temp = "";
