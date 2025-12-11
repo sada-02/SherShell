@@ -23,11 +23,13 @@ namespace fs = filesystem;
 #endif
 
 map<string,string> commands;
-vector<string> builtins = {"echo" , "exit" , "type" , "pwd" , "cd"};
-vector<string> defaultcmds = {"echo" , "exit" , "type" , "pwd" , "cd" , "ls"};
+vector<string> builtins = {"echo" , "exit" , "type" , "pwd" , "cd" , "history"};
+vector<string> defaultcmds = {"echo" , "exit" , "type" , "pwd" , "cd" , "ls" , 
+  "cat" , "history"};
 vector<char> specialChars = {'\"','\\','$','`'};
 string PATH;
 string HOME;
+vector<string> HISTORY;
 
 #ifdef _WIN32
   DWORD orig_mode;
@@ -497,6 +499,7 @@ int main() {
     string cmd , str = "" , errorstr = "";
     cmd = readCommand();
 
+    HISTORY.emplace_back(cmd);
     vector<string> tokens = tokenize(cmd);
     if(tokens.empty()) continue;
     int maxIDX = tokens.size();
@@ -527,6 +530,13 @@ int main() {
 
     if(cmd == "exit") {
       break;
+    }
+    else if(tokens[0] == "history") {
+      int i = 1;
+      for(const string& s : HISTORY) {
+        str+=to_string(i)+"  "+s+"\n";
+        i++;
+      }
     }
     else if(tokens[0] == "ls") {
       string sep = " ";
