@@ -23,7 +23,7 @@ namespace fs = filesystem;
 #endif
 
 map<string,string> commands;
-vector<string> builtins = {"echo" , "exit" , "type" , "pwd" , "cd" , "history"};
+vector<string> builtins = {"echo" , "exit" , "type" , "pwd" , "cd" , "history" , "ls" , "cat" , "wc"};
 vector<string> defaultcmds = {"echo" , "exit" , "type" , "pwd" , "cd" , "ls" , 
   "cat" , "history"};
 vector<char> specialChars = {'\"','\\','$','`'};
@@ -91,6 +91,21 @@ bool is_number(const string& s) {
   string::const_iterator it = s.begin();
   while (it != s.end() && isdigit(*it)) ++it;
   return !s.empty() && it == s.end();
+}
+
+string trim(const string& str) {
+  size_t start = 0;
+  size_t end = str.length();
+  
+  while (start < end && isspace(str[start])) {
+    start++;
+  }
+  
+  while (end > start && isspace(str[end - 1])) {
+    end--;
+  }
+  
+  return str.substr(start, end - start);
 }
 
 struct TrieNode {
@@ -671,6 +686,12 @@ void iter(string& cmd, bool handleRedirection = true, bool exitAfterBuiltin = fa
         str = str + s + sep;
       }
     }
+
+    if(exitAfterBuiltin) {
+      if(str.size()) cout << str;
+      if(errorstr.size()) cerr << errorstr;
+      exit(0);
+    }
   }
   else if(tokens[0] == "wc") {
     string text = "";
@@ -718,6 +739,12 @@ void iter(string& cmd, bool handleRedirection = true, bool exitAfterBuiltin = fa
       if(w) str += "\t"+to_string(words)+"\t";
       if(s) str += "\t"+to_string(bytes)+"\t";
       str += '\n';
+    }
+
+    if(exitAfterBuiltin) {
+      if(str.size()) cout << str;
+      if(errorstr.size()) cerr << errorstr;
+      exit(0);
     }
   }
   else if(tokens[0] == "echo") {
@@ -1036,11 +1063,11 @@ int main() {
 
     for(int i=0 ;i<cmd.size() ;i++) {
       if(cmd[i] == '|') {
-        cmdsPiped.push_back(cmd.substr(st,i-st));
+        cmdsPiped.push_back(trim(cmd.substr(st,i-st)));
         st = i+1;
       }
     }
-    cmdsPiped.push_back(cmd.substr(st));
+    cmdsPiped.push_back(trim(cmd.substr(st)));
     
     if(cmdsPiped.size() == 1) {
       iter(cmdsPiped[0]);
