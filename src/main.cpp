@@ -322,10 +322,19 @@ string longestCommonPrefix(vector<string>& words) {
 }
 
 string readCommand() {
+  bool isTTY = isatty(STDIN_FILENO);
+  
+  // In non-interactive mode, just read a line directly
+  if(!isTTY) {
+    string cmd;
+    getline(cin, cmd);
+    return cmd;
+  }
+  
+  // Interactive mode with full features
   string cmd = "" , temp = "";
   char c ;
   bool onetab = false;
-  bool isTTY = isatty(STDIN_FILENO);
 
   while(true) {
     c = getChar();
@@ -996,12 +1005,15 @@ int main() {
     }
   }
   
-  enableRawMode();
+  // Only enable raw mode if stdin is a terminal
+  if(isatty(STDIN_FILENO)) {
+    enableRawMode();
+  }
   currHistPtr=0;
   lastAppend = 1;
 
   while(true) {
-    cout << "$ ";
+    if(isatty(STDIN_FILENO)) cout << "$ ";
     extensions.clear();
     string cmd ;
     cmd = readCommand();
