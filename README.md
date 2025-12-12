@@ -1,4 +1,4 @@
-# SherShell 🐚
+# SherShell 🦁
 
 A feature-rich, POSIX-compliant shell implementation written in C++ with cross-platform support (Linux/Unix and Windows). SherShell provides a modern command-line interface with advanced features like command history, autocompletion, pipelines, and I/O redirection.
 
