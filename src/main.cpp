@@ -325,6 +325,7 @@ string readCommand() {
   string cmd = "" , temp = "";
   char c ;
   bool onetab = false;
+  bool isTTY = isatty(STDIN_FILENO);
 
   while(true) {
     c = getChar();
@@ -332,7 +333,7 @@ string readCommand() {
     if(c == '\n' || c == '\r') {
       cmd = cmd + temp;
       temp = "";
-      cout<<'\n'<<flush;
+      if(isTTY) cout<<'\n'<<flush;
       break;
     }
     else if(c == '\x1b') {
@@ -342,16 +343,16 @@ string readCommand() {
       if(seq1 == '[') {
         if(seq2 == 'A') {
           if(currHistPtr > 0 && HISTORY.size() > 0) {
-            for(int i=0; i<temp.size()+cmd.size(); i++) cout<<"\b \b";
+            if(isTTY) for(int i=0; i<temp.size()+cmd.size(); i++) cout<<"\b \b";
             currHistPtr--;
             cmd = HISTORY[currHistPtr];
-            cout<<cmd<<flush;
+            if(isTTY) cout<<cmd<<flush;
             temp = "";
           }
         }
         else if(seq2 == 'B') {
           if(currHistPtr < HISTORY.size()) {
-            for(int i=0; i<temp.size()+cmd.size(); i++) cout<<"\b \b";
+            if(isTTY) for(int i=0; i<temp.size()+cmd.size(); i++) cout<<"\b \b";
             currHistPtr++;
             if(currHistPtr >= HISTORY.size()) {
               cmd = "";
@@ -359,7 +360,7 @@ string readCommand() {
             } 
             else {
               cmd = HISTORY[currHistPtr];
-              cout<<cmd<<flush;
+              if(isTTY) cout<<cmd<<flush;
               temp = "";
             }
           }
@@ -369,7 +370,7 @@ string readCommand() {
     else if(c == ' ') {
       cmd += temp + " ";
       temp = "";
-      cout<<' '<<flush;
+      if(isTTY) cout<<' '<<flush;
       onetab = false;
     }
     else if(c == '\t') {
@@ -377,9 +378,9 @@ string readCommand() {
       sort(words.begin() , words.end());
 
       if(words.size() == 1) {
-        for(int i=0 ;i<temp.size() ;i++) cout<<"\b \b";
+        if(isTTY) for(int i=0 ;i<temp.size() ;i++) cout<<"\b \b";
         cmd += *words.begin() + " ";
-        cout<<*words.begin()<<' '<<flush;
+        if(isTTY) cout<<*words.begin()<<' '<<flush;
         temp = "";
         onetab = false;
         continue;
@@ -387,8 +388,8 @@ string readCommand() {
       else if(words.size() > 1) {
         string lcp = longestCommonPrefix(words);
         if(lcp != temp) {
-          for(int i=0 ;i<temp.size() ;i++) cout<<"\b \b";
-          cout<<lcp<<flush;
+          if(isTTY) for(int i=0 ;i<temp.size() ;i++) cout<<"\b \b";
+          if(isTTY) cout<<lcp<<flush;
           temp = lcp;
           onetab = false;
           continue;
@@ -398,9 +399,9 @@ string readCommand() {
       words = findExecWith(temp);
       sort(words.begin() , words.end());
       if(words.size() == 1) {
-        for(int i=0 ;i<temp.size() ;i++) cout<<"\b \b";
+        if(isTTY) for(int i=0 ;i<temp.size() ;i++) cout<<"\b \b";
         cmd += *words.begin() + " ";
-        cout<<*words.begin()<<' '<<flush;
+        if(isTTY) cout<<*words.begin()<<' '<<flush;
         temp = "";
         onetab = false;
         continue;
@@ -408,8 +409,8 @@ string readCommand() {
       else if(words.size() > 1) {
         string lcp = longestCommonPrefix(words);
         if(lcp != temp) {
-          for(int i=0 ;i<temp.size() ;i++) cout<<"\b \b";
-          cout<<lcp<<flush;
+          if(isTTY) for(int i=0 ;i<temp.size() ;i++) cout<<"\b \b";
+          if(isTTY) cout<<lcp<<flush;
           temp = lcp;
           onetab = false;
           continue;
@@ -417,22 +418,24 @@ string readCommand() {
       }
 
       if(onetab) {
-        cout<<'\n';
-        for(const string& s : words) {
-          cout<<s<<"  ";
+        if(isTTY) {
+          cout<<'\n';
+          for(const string& s : words) {
+            cout<<s<<"  ";
+          }
+          cout<<'\n'<<flush;
+          cout<<"$ "<<cmd+temp<<flush;
         }
-        cout<<'\n'<<flush;
-        cout<<"$ "<<cmd+temp<<flush;
         onetab = false;
       }
       else {
-        cout<<'\x07'<<flush;
+        if(isTTY) cout<<'\x07'<<flush;
         onetab = true;
       }
     }
     else {
       temp += c;
-      cout<<c<<flush;
+      if(isTTY) cout<<c<<flush;
       onetab = false;
     }
   }
@@ -534,7 +537,7 @@ void iter(string& cmd, bool inPipeline = false) {
   int maxIDX = tokens.size();
   
   string outputFilePath = "";
-  
+
   if(!inPipeline) {
     for(int i=0 ;i<tokens.size() ;i++) {
     if(tokens[i] == ">" || tokens[i] == "1>" || tokens[i] == "2>") {
@@ -755,12 +758,12 @@ void iter(string& cmd, bool inPipeline = false) {
   else if(tokens[0] == "type") {
     for(int i=1 ; i<maxIDX ;i++) {
       if(commands[tokens[i]] == "sh") {
-        str = tokens[i] + " is a shell builtin" + '\n';
+        str += tokens[i] + " is a shell builtin" + '\n';
       }
       else {
         fs::path p = checkExec(tokens[i]);
         if(!p.empty()) {
-          str = tokens[i] + " is " + p.string() + '\n';
+          str += tokens[i] + " is " + p.string() + '\n';
         }
         else {
           errorstr += tokens[i] + ": not found" + '\n';
