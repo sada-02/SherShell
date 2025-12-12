@@ -525,39 +525,48 @@ fs::path createPathTo(const string& filePath) {
   return fPath;
 }
 
-void iter(string& cmd) {
+void iter(string& cmd, bool handleRedirection = true, bool exitAfterBuiltin = false) {
   bool append = false , overWrite = false , directop = false, directerr = false;
   string str = "" , errorstr = "";
   
   vector<string> tokens = tokenize(cmd);
-  if(tokens.empty()) return;
-  int maxIDX = tokens.size();
+  if(tokens.empty()) {
+    if(exitAfterBuiltin) exit(1);
+    return;
+  }
   
   string outputFilePath = "";
-  for(int i=0 ;i<tokens.size() ;i++) {
-    if(tokens[i] == ">" || tokens[i] == "1>" || tokens[i] == "2>") {
-      overWrite = true;
-      outputFilePath = tokens[i+1];
-      maxIDX = i;
-      directop = true;
-      if(tokens[i] == "2>") {
-        directerr = true;
+  int maxIDX = tokens.size();
+  vector<char> extensions;
+
+  if(handleRedirection) {
+    for(int i=0 ;i<tokens.size() ;i++) {
+      if(tokens[i] == ">" || tokens[i] == "1>" || tokens[i] == "2>") {
+        overWrite = true;
+        outputFilePath = tokens[i+1];
+        maxIDX = i;
+        directop = true;
+        if(tokens[i] == "2>") {
+          directerr = true;
+        }
+        break;
       }
-      break;
-    }
-    else if(tokens[i] == ">>" || tokens[i] == "1>>" || tokens[i] == "2>>") {
-      append = true;
-      outputFilePath = tokens[i+1];
-      maxIDX = i;
-      directop = true;
-      if(tokens[i] == "2>>") {
-        directerr = true;
+      else if(tokens[i] == ">>" || tokens[i] == "1>>" || tokens[i] == "2>>") {
+        append = true;
+        outputFilePath = tokens[i+1];
+        maxIDX = i;
+        directop = true;
+        if(tokens[i] == "2>>") {
+          directerr = true;
+        }
+        break;
       }
-      break;
     }
-  }
+  } 
 
   if(cmd == "exit") {
+    if(exitAfterBuiltin) exit(0);
+    
     if(histfileEnv) {
       ofstream File(histFilePath.string());
       for(const string& s : HISTORY) {
@@ -565,6 +574,7 @@ void iter(string& cmd) {
       }
       File.close();
     }
+
     exit(0);
   }
   else if(tokens[0] == "history") {
@@ -716,6 +726,11 @@ void iter(string& cmd) {
       if(i != tokens.size()-1) str+=" ";
     }
     str+='\n';
+
+    if(exitAfterBuiltin) {
+      cout << str;
+      exit(0);
+    }
   }
   else if(tokens[0] == "cat") {
     for(int i=1 ;i<maxIDX ;i++) {
@@ -741,6 +756,11 @@ void iter(string& cmd) {
     }
     
     if(str.size()) str+='\n';
+
+    if(exitAfterBuiltin) {
+      cout << str;
+      exit(0);
+    }
   }
   else if(tokens[0] == "type") {
     for(int i=1 ; i<maxIDX ;i++) {
@@ -757,10 +777,21 @@ void iter(string& cmd) {
         } 
       }
     }
+
+    if(exitAfterBuiltin) {
+      if(str.size()) cout << str;
+      if(errorstr.size()) cerr << errorstr;
+      exit(0);
+    }
   }
   else if(tokens[0] == "pwd") {
     fs::path curr = fs::current_path();
     str = curr.string()+'\n';
+
+    if(exitAfterBuiltin) {
+      cout << str;
+      exit(0);
+    }
   }
   else if(tokens[0] == "cd") {
     if(tokens.size() == 1) {
@@ -799,7 +830,6 @@ void iter(string& cmd) {
         errorstr += "cd: " + curr.string() + ": No such file or directory" + '\n';
       }
     }
-    
   }
   else {
     fs::path isExec = checkExec(tokens[0]);
@@ -824,6 +854,12 @@ void iter(string& cmd) {
         waitpid(pid,&status,0);
       }
     }
+  }
+
+  if(!handleRedirection) {
+    if(str.size()) cout << str;
+    if(errorstr.size()) cerr << errorstr;
+    return;
   }
 
   if(!append && !overWrite) {
@@ -887,6 +923,11 @@ void iter(string& cmd) {
 void executeCommand(string& cmd) {
    vector<string> tokens = tokenize(cmd);
    if(tokens.empty()) exit(1);
+  
+   if(!tokens.empty() && commands[tokens[0]] == "sh") {
+     iter(cmd, false, true); 
+     exit(0);
+   }
   
    fs::path isExec = checkExec(tokens[0]);
   
