@@ -721,14 +721,14 @@ void iter(string& cmd) {
     for(int i=1 ;i<maxIDX ;i++) {
       if(!fs::exists(fs::path(tokens[i]))) {
         errorstr += "cat: " + tokens[i] + ": No such file or directory" + '\n';
-        return;
+        continue;
       }
 
       ifstream File(tokens[i]);
       string line;
       if (!File.is_open()) {
         errorstr += "cat: " + tokens[i] + ": File cannot be opened" + '\n';
-        return;
+        continue;
       }
 
       while(getline(File,line)) {
