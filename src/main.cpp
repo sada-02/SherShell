@@ -714,15 +714,8 @@ void iter(string& cmd, bool inPipeline = false) {
   }
   else if(tokens[0] == "echo") {
     for(int i=1 ;i<maxIDX ;i++) {
-      string output = tokens[i];
-      // Handle \n escape sequences
-      size_t pos = 0;
-      while((pos = output.find("\\n", pos)) != string::npos) {
-        output.replace(pos, 2, "\n");
-        pos += 1;
-      }
-      str += output;
-      if(i < maxIDX-1) str+=" ";
+      str+=tokens[i];
+      if(i != tokens.size()-1) str+=" ";
     }
     str+='\n';
   }
