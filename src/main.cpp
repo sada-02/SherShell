@@ -773,7 +773,8 @@ void iter(string& cmd, bool handleRedirection = true, bool exitAfterBuiltin = fa
     if(str.size()) str+='\n';
 
     if(exitAfterBuiltin) {
-      cout << str;
+      if(str.size()) cout << str;
+      if(errorstr.size()) cerr << errorstr;
       exit(0);
     }
   }
@@ -939,7 +940,11 @@ void executeCommand(string& cmd) {
    vector<string> tokens = tokenize(cmd);
    if(tokens.empty()) exit(1);
   
+   // DEBUG
+   cerr << "[DEBUG executeCommand] cmd='" << cmd << "' tokens[0]='" << tokens[0] << "'" << endl;
+  
    if(!tokens.empty() && commands[tokens[0]] == "sh") {
+     cerr << "[DEBUG] Calling iter() for builtin" << endl;
      iter(cmd, false, true); 
      exit(0);
    }
