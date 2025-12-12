@@ -36,7 +36,6 @@ vector<char> extensions;
 int lastAppend;
 char* histfileEnv;
 fs::path histFilePath;
-bool rawModeEnabled = false;
 
 #ifdef _WIN32
   DWORD orig_mode;
@@ -323,14 +322,6 @@ string longestCommonPrefix(vector<string>& words) {
 }
 
 string readCommand() {
-  // In non-interactive mode, just read a line directly
-  if(!rawModeEnabled) {
-    string cmd;
-    getline(cin, cmd);
-    return cmd;
-  }
-  
-  // Interactive mode with full features
   string cmd = "" , temp = "";
   char c ;
   bool onetab = false;
@@ -543,7 +534,6 @@ void iter(string& cmd, bool inPipeline = false) {
   int maxIDX = tokens.size();
   
   string outputFilePath = "";
-
   if(!inPipeline) {
     for(int i=0 ;i<tokens.size() ;i++) {
     if(tokens[i] == ">" || tokens[i] == "1>" || tokens[i] == "2>") {
@@ -764,12 +754,12 @@ void iter(string& cmd, bool inPipeline = false) {
   else if(tokens[0] == "type") {
     for(int i=1 ; i<maxIDX ;i++) {
       if(commands[tokens[i]] == "sh") {
-        str += tokens[i] + " is a shell builtin" + '\n';
+        str = tokens[i] + " is a shell builtin" + '\n';
       }
       else {
         fs::path p = checkExec(tokens[i]);
         if(!p.empty()) {
-          str += tokens[i] + " is " + p.string() + '\n';
+          str = tokens[i] + " is " + p.string() + '\n';
         }
         else {
           errorstr += tokens[i] + ": not found" + '\n';
@@ -1002,16 +992,12 @@ int main() {
     }
   }
   
-  // Only enable raw mode if stdin is a terminal
-  if(isatty(STDIN_FILENO)) {
-    enableRawMode();
-    rawModeEnabled = true;
-  }
+  // enableRawMode();
   currHistPtr=0;
   lastAppend = 1;
 
   while(true) {
-    if(rawModeEnabled) cout << "$ ";
+    cout << "$ ";
     extensions.clear();
     string cmd ;
     cmd = readCommand();
