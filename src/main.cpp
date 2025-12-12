@@ -765,7 +765,7 @@ void iter(string& cmd) {
   else if(tokens[0] == "cd") {
     if(tokens.size() == 1) {
       fs::current_path(fs::path(HOME));
-      break;
+      return;
     }
 
     vector<string> pathTokens = tokenizePATH(tokens[1]);
