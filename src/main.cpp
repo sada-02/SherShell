@@ -93,21 +93,6 @@ bool is_number(const string& s) {
   return !s.empty() && it == s.end();
 }
 
-string trim(const string& str) {
-  size_t start = 0;
-  size_t end = str.length();
-  
-  while (start < end && isspace(str[start])) {
-    start++;
-  }
-  
-  while (end > start && isspace(str[end - 1])) {
-    end--;
-  }
-  
-  return str.substr(start, end - start);
-}
-
 struct TrieNode {
   map<char,TrieNode*> ptrs;
   bool flag;
@@ -540,48 +525,42 @@ fs::path createPathTo(const string& filePath) {
   return fPath;
 }
 
-void iter(string& cmd, bool handleRedirection = true, bool exitAfterBuiltin = false) {
+void iter(string& cmd, bool inPipeline = false) {
   bool append = false , overWrite = false , directop = false, directerr = false;
   string str = "" , errorstr = "";
   
   vector<string> tokens = tokenize(cmd);
-  if(tokens.empty()) {
-    if(exitAfterBuiltin) exit(1);
-    return;
-  }
+  if(tokens.empty()) return;
+  int maxIDX = tokens.size();
   
   string outputFilePath = "";
-  int maxIDX = tokens.size();
-  vector<char> extensions;
-
-  if(handleRedirection) {
+  
+  if(!inPipeline) {
     for(int i=0 ;i<tokens.size() ;i++) {
-      if(tokens[i] == ">" || tokens[i] == "1>" || tokens[i] == "2>") {
-        overWrite = true;
-        outputFilePath = tokens[i+1];
-        maxIDX = i;
-        directop = true;
-        if(tokens[i] == "2>") {
-          directerr = true;
-        }
-        break;
+    if(tokens[i] == ">" || tokens[i] == "1>" || tokens[i] == "2>") {
+      overWrite = true;
+      outputFilePath = tokens[i+1];
+      maxIDX = i;
+      directop = true;
+      if(tokens[i] == "2>") {
+        directerr = true;
       }
-      else if(tokens[i] == ">>" || tokens[i] == "1>>" || tokens[i] == "2>>") {
-        append = true;
-        outputFilePath = tokens[i+1];
-        maxIDX = i;
-        directop = true;
-        if(tokens[i] == "2>>") {
-          directerr = true;
-        }
-        break;
-      }
+      break;
     }
-  } 
+    else if(tokens[i] == ">>" || tokens[i] == "1>>" || tokens[i] == "2>>") {
+      append = true;
+      outputFilePath = tokens[i+1];
+      maxIDX = i;
+      directop = true;
+      if(tokens[i] == "2>>") {
+        directerr = true;
+      }
+      break;
+    }
+    }
+  }
 
   if(cmd == "exit") {
-    if(exitAfterBuiltin) exit(0);
-    
     if(histfileEnv) {
       ofstream File(histFilePath.string());
       for(const string& s : HISTORY) {
@@ -589,7 +568,6 @@ void iter(string& cmd, bool handleRedirection = true, bool exitAfterBuiltin = fa
       }
       File.close();
     }
-
     exit(0);
   }
   else if(tokens[0] == "history") {
@@ -737,15 +715,17 @@ void iter(string& cmd, bool handleRedirection = true, bool exitAfterBuiltin = fa
   }
   else if(tokens[0] == "echo") {
     for(int i=1 ;i<maxIDX ;i++) {
-      str+=tokens[i];
-      if(i != tokens.size()-1) str+=" ";
+      string output = tokens[i];
+      // Handle \n escape sequences
+      size_t pos = 0;
+      while((pos = output.find("\\n", pos)) != string::npos) {
+        output.replace(pos, 2, "\n");
+        pos += 1;
+      }
+      str += output;
+      if(i < maxIDX-1) str+=" ";
     }
     str+='\n';
-
-    if(exitAfterBuiltin) {
-      cout << str;
-      exit(0);
-    }
   }
   else if(tokens[0] == "cat") {
     for(int i=1 ;i<maxIDX ;i++) {
@@ -771,12 +751,6 @@ void iter(string& cmd, bool handleRedirection = true, bool exitAfterBuiltin = fa
     }
     
     if(str.size()) str+='\n';
-
-    if(exitAfterBuiltin) {
-      if(str.size()) cout << str;
-      if(errorstr.size()) cerr << errorstr;
-      exit(0);
-    }
   }
   else if(tokens[0] == "type") {
     for(int i=1 ; i<maxIDX ;i++) {
@@ -793,21 +767,10 @@ void iter(string& cmd, bool handleRedirection = true, bool exitAfterBuiltin = fa
         } 
       }
     }
-
-    if(exitAfterBuiltin) {
-      if(str.size()) cout << str;
-      if(errorstr.size()) cerr << errorstr;
-      exit(0);
-    }
   }
   else if(tokens[0] == "pwd") {
     fs::path curr = fs::current_path();
     str = curr.string()+'\n';
-
-    if(exitAfterBuiltin) {
-      cout << str;
-      exit(0);
-    }
   }
   else if(tokens[0] == "cd") {
     if(tokens.size() == 1) {
@@ -846,6 +809,7 @@ void iter(string& cmd, bool handleRedirection = true, bool exitAfterBuiltin = fa
         errorstr += "cd: " + curr.string() + ": No such file or directory" + '\n';
       }
     }
+    
   }
   else {
     fs::path isExec = checkExec(tokens[0]);
@@ -872,18 +836,12 @@ void iter(string& cmd, bool handleRedirection = true, bool exitAfterBuiltin = fa
     }
   }
 
-  if(!handleRedirection) {
-    if(str.size()) cout << str;
-    if(errorstr.size()) cerr << errorstr;
-    return;
-  }
-
-  if(!append && !overWrite) {
+  if(inPipeline || (!append && !overWrite)) {
     if(str.size()) {
       cout<<str;
     }
-    else {
-      cout<<errorstr;
+    if(errorstr.size()) {
+      cerr<<errorstr;
     }
   }
   else {
@@ -937,83 +895,56 @@ void iter(string& cmd, bool handleRedirection = true, bool exitAfterBuiltin = fa
 }
 
 void executeCommand(string& cmd) {
-   vector<string> tokens = tokenize(cmd);
-   if(tokens.empty()) exit(1);
-  
-   // Handle builtins directly in pipeline context
-   if(tokens[0] == "echo") {
-     for(int i=1; i<tokens.size(); i++) {
-       cout << tokens[i];
-       if(i != tokens.size()-1) cout << " ";
-     }
-     cout << "\n";
-     exit(0);
-   }
-   else if(tokens[0] == "type") {
-     for(int i=1; i<tokens.size(); i++) {
-       if(commands[tokens[i]] == "sh") {
-         cout << tokens[i] << " is a shell builtin\n";
-       }
-       else {
-         fs::path p = checkExec(tokens[i]);
-         if(!p.empty()) {
-           cout << tokens[i] << " is " << p.string() << "\n";
-         }
-         else {
-           cerr << tokens[i] << ": not found\n";
-         }
-       }
-     }
-     exit(0);
-   }
-   else if(tokens[0] == "pwd") {
-     cout << fs::current_path().string() << "\n";
-     exit(0);
-   }
-  
-   // External command execution
-   fs::path isExec = checkExec(tokens[0]);
-  
-   if(isExec.empty()) {
-     cerr << cmd << ": command not found\n";
-     exit(1);
-   }
-  
-   vector<char*> args;
-   for(auto& t : tokens) {
-     args.push_back(const_cast<char*>(t.c_str()));
-   }
-   args.push_back(NULL);
-  
-   execvp(isExec.string().c_str(), args.data());
-  
-   cerr << "Failed to execute " << cmd << "\n";
-   exit(1);
+  vector<string> tokens = tokenize(cmd);
+  if(tokens.empty()) exit(1);
+
+  if(commands[tokens[0]] == "sh") {
+    iter(cmd, true);
+    exit(0);
+  }
+
+  fs::path isExec = checkExec(tokens[0]);
+
+  if(isExec.empty()) {
+    cerr << cmd << ": command not found\n";
+    exit(1);
+  }
+
+  vector<char*> args;
+  for(auto& t : tokens) {
+    args.push_back(const_cast<char*>(t.c_str()));
+  }
+  args.push_back(NULL);
+
+  execvp(isExec.string().c_str(), args.data());
+
+  cerr << "Failed to execute " << cmd << "\n";
+  exit(1);
 }
 
 void executePipeline(vector<string>& cmdsPiped) {
-   int numPipes = cmdsPiped.size() - 1;
-   int pipefds[numPipes][2];
+  int numPipes = cmdsPiped.size() - 1;
+  int pipefds[numPipes][2];
 
-   for(int i = 0; i < numPipes; i++) {
-     if(pipe(pipefds[i]) < 0) {
-       cerr << "Pipe creation failed\n";
-       return;
-     }
-   }
+  for(int i = 0; i < numPipes; i++) {
+    if(pipe(pipefds[i]) < 0) {
+      cerr << "Pipe creation failed\n";
+      return;
+    }
+  }
   
-   vector<pid_t> pids;
+  vector<pid_t> pids;
   
-   for(int i = 0; i < cmdsPiped.size(); i++) {
-      pid_t pid = fork();
-    
-      if(pid == 0) {
-        if(i > 0) {
-          dup2(pipefds[i-1][0], STDIN_FILENO);
+  for(int i = 0; i < cmdsPiped.size(); i++) {
+    pid_t pid = fork();
+  
+    if(pid == 0) {
+      if(i > 0) {
+        dup2(pipefds[i-1][0], STDIN_FILENO);
       }
       
       if(i < numPipes) {
-         dup2(pipefds[i][1], STDOUT_FILENO);
+        dup2(pipefds[i][1], STDOUT_FILENO);
       }
       
       for(int j = 0; j < numPipes; j++) {
@@ -1079,11 +1010,11 @@ int main() {
 
     for(int i=0 ;i<cmd.size() ;i++) {
       if(cmd[i] == '|') {
-        cmdsPiped.push_back(trim(cmd.substr(st,i-st)));
+        cmdsPiped.push_back(cmd.substr(st,i-st));
         st = i+1;
       }
     }
-    cmdsPiped.push_back(trim(cmd.substr(st)));
+    cmdsPiped.push_back(cmd.substr(st));
     
     if(cmdsPiped.size() == 1) {
       iter(cmdsPiped[0]);
