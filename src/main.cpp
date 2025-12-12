@@ -937,6 +937,7 @@ void executePipeline(vector<string>& cmdsPiped) {
   for(int i = 0; i < cmdsPiped.size(); i++) {
     pid_t pid = fork();
   
+    enableRawMode();
     if(pid == 0) {
       if(i > 0) {
         dup2(pipefds[i-1][0], STDIN_FILENO);
@@ -992,7 +993,7 @@ int main() {
     }
   }
   
-  // enableRawMode();
+  enableRawMode();
   currHistPtr=0;
   lastAppend = 1;
 
