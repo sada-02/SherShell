@@ -718,34 +718,29 @@ void iter(string& cmd) {
     str+='\n';
   }
   else if(tokens[0] == "cat") {
-    if(tokens.size() == 1 && !input.empty()) {
-      str = input;
-    }
-    else {
-      for(int i=1 ;i<maxIDX ;i++) {
-        if(!fs::exists(fs::path(tokens[i]))) {
-          errorstr += "cat: " + tokens[i] + ": No such file or directory" + '\n';
-          continue;
-        }
-
-        ifstream File(tokens[i]);
-        string line;
-        if (!File.is_open()) {
-          errorstr += "cat: " + tokens[i] + ": File cannot be opened" + '\n';
-          continue;
-        }
-
-        while(getline(File,line)) {
-          str+=line;
-          if(File.peek() != EOF) {
-            str+='\n';
-          }
-        }
-        File.close();
+    for(int i=1 ;i<maxIDX ;i++) {
+      if(!fs::exists(fs::path(tokens[i]))) {
+        errorstr += "cat: " + tokens[i] + ": No such file or directory" + '\n';
+        return;
       }
-      
-      if(str.size()) str+='\n';
+
+      ifstream File(tokens[i]);
+      string line;
+      if (!File.is_open()) {
+        errorstr += "cat: " + tokens[i] + ": File cannot be opened" + '\n';
+        return;
+      }
+
+      while(getline(File,line)) {
+        str+=line;
+        if(File.peek() != EOF) {
+          str+='\n';
+        }
+      }
+      File.close();
     }
+    
+    if(str.size()) str+='\n';
   }
   else if(tokens[0] == "type") {
     for(int i=1 ; i<maxIDX ;i++) {
@@ -770,7 +765,7 @@ void iter(string& cmd) {
   else if(tokens[0] == "cd") {
     if(tokens.size() == 1) {
       fs::current_path(fs::path(HOME));
-      continue;
+      break;
     }
 
     vector<string> pathTokens = tokenizePATH(tokens[1]);
