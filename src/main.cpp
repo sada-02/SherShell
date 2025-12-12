@@ -23,7 +23,7 @@ namespace fs = filesystem;
 #endif
 
 map<string,string> commands;
-vector<string> builtins = {"echo" , "exit" , "type" , "pwd" , "cd" , "history" , "ls" , "cat" , "wc"};
+vector<string> builtins = {"echo" , "exit" , "type" , "pwd" , "cd" , "history"};
 vector<string> defaultcmds = {"echo" , "exit" , "type" , "pwd" , "cd" , "ls" , 
   "cat" , "history"};
 vector<char> specialChars = {'\"','\\','$','`'};
@@ -686,12 +686,6 @@ void iter(string& cmd, bool handleRedirection = true, bool exitAfterBuiltin = fa
         str = str + s + sep;
       }
     }
-
-    if(exitAfterBuiltin) {
-      if(str.size()) cout << str;
-      if(errorstr.size()) cerr << errorstr;
-      exit(0);
-    }
   }
   else if(tokens[0] == "wc") {
     string text = "";
@@ -739,12 +733,6 @@ void iter(string& cmd, bool handleRedirection = true, bool exitAfterBuiltin = fa
       if(w) str += "\t"+to_string(words)+"\t";
       if(s) str += "\t"+to_string(bytes)+"\t";
       str += '\n';
-    }
-
-    if(exitAfterBuiltin) {
-      if(str.size()) cout << str;
-      if(errorstr.size()) cerr << errorstr;
-      exit(0);
     }
   }
   else if(tokens[0] == "echo") {
