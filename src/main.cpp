@@ -34,6 +34,8 @@ vector<string> HISTORY;
 int currHistPtr ;
 vector<char> extensions;
 int lastAppend;
+char* histfileEnv;
+fs::path histFilePath;
 
 #ifdef _WIN32
   DWORD orig_mode;
@@ -523,185 +525,204 @@ fs::path createPathTo(const string& filePath) {
   return fPath;
 }
 
-int main() {
-  cout<<unitbuf;
-  cerr<<unitbuf;
-
-  for(const string& str : builtins) commands[str] = "sh";
-  for(const string& str : defaultcmds) checkAutoCompletion->insert(str);
-  PATH = getenv("PATH");
-  HOME = getenv("HOME");
-
-  char* histfileEnv = getenv("HISTFILE");
-  fs::path histFilePath;
-  if(histfileEnv != nullptr) {
-    HISTORYFILE = string(histfileEnv);
-    histFilePath = createPathTo(HISTORYFILE);
-    if(fs::exists(histFilePath)) {
-      fstream hfile(histFilePath.string());
-      string hlines;
-      while(getline(hfile,hlines)) {
-        HISTORY.push_back(hlines);
+void iter(string& cmd) {
+  bool append = false , overWrite = false , directop = false, directerr = false;
+  string str = "" , errorstr = "";
+  
+  vector<string> tokens = tokenize(cmd);
+  if(tokens.empty()) continue;
+  int maxIDX = tokens.size();
+  
+  string outputFilePath = "";
+  for(int i=0 ;i<tokens.size() ;i++) {
+    if(tokens[i] == ">" || tokens[i] == "1>" || tokens[i] == "2>") {
+      overWrite = true;
+      outputFilePath = tokens[i+1];
+      maxIDX = i;
+      directop = true;
+      if(tokens[i] == "2>") {
+        directerr = true;
       }
-      hfile.close();
+      break;
+    }
+    else if(tokens[i] == ">>" || tokens[i] == "1>>" || tokens[i] == "2>>") {
+      append = true;
+      outputFilePath = tokens[i+1];
+      maxIDX = i;
+      directop = true;
+      if(tokens[i] == "2>>") {
+        directerr = true;
+      }
+      break;
     }
   }
-  
-  enableRawMode();
-  currHistPtr=0;
-  lastAppend = 1;
 
-  while(true) {
-    cout << "$ ";
-    extensions.clear();
-    bool append = false , overWrite = false , directop = false, directerr = false;
-    string cmd , str = "" , errorstr = "";
-    cmd = readCommand();
-
-    HISTORY.emplace_back(cmd);
-    currHistPtr = HISTORY.size();
-
-    vector<string> tokens = tokenize(cmd);
-    if(tokens.empty()) continue;
-    int maxIDX = tokens.size();
-    
-    string outputFilePath = "";
-    for(int i=0 ;i<tokens.size() ;i++) {
-      if(tokens[i] == ">" || tokens[i] == "1>" || tokens[i] == "2>") {
-        overWrite = true;
-        outputFilePath = tokens[i+1];
-        maxIDX = i;
-        directop = true;
-        if(tokens[i] == "2>") {
-          directerr = true;
-        }
-        break;
+  if(cmd == "exit") {
+    if(histfileEnv) {
+      ofstream File(histFilePath.string());
+      for(const string& s : HISTORY) {
+        File<<s+"\n";
       }
-      else if(tokens[i] == ">>" || tokens[i] == "1>>" || tokens[i] == "2>>") {
-        append = true;
-        outputFilePath = tokens[i+1];
-        maxIDX = i;
-        directop = true;
-        if(tokens[i] == "2>>") {
-          directerr = true;
+      File.close();
+    }
+    break;
+  }
+  else if(tokens[0] == "history") {
+    int i = HISTORY.size();
+    fs::path p ;
+    bool givenLen = false , readMode = false , makeFile = false;
+
+    for(int j=1 ;j<tokens.size() ;j++) {
+      if(is_number(tokens[j])) {
+        i = i-stoi(tokens[j])+1;
+        givenLen = true;
+      }
+      else if(tokens[j][0] == '-') {
+        for(int k=1 ;k<tokens[j].size() ;k++) {
+          extensions.push_back(tokens[j][k]);
+          if(tokens[j][k] == 'w') makeFile = true;
         }
-        break;
+      }
+      else {
+        if(fs::exists(fs::path(tokens[j]))) {
+          p = fs::path(tokens[j]);
+        }
+        else if(makeFile) {
+          p = createPathTo(tokens[j]);
+        }
       }
     }
 
-    if(cmd == "exit") {
-      if(histfileEnv) {
-        ofstream File(histFilePath.string());
+    if(!givenLen) i = 1;
+
+    for(char c : extensions) {
+      if(c == 'r') {
+        readMode = true;
+        fstream File(p.string());
+        string lines;
+        while(getline(File,lines)) {
+          HISTORY.push_back(lines);
+        }
+        File.close();
+      }
+      else if(c == 'w') {
+        readMode = true;
+        ofstream File(p.string());
         for(const string& s : HISTORY) {
           File<<s+"\n";
         }
         File.close();
       }
-      break;
-    }
-    else if(tokens[0] == "history") {
-      int i = HISTORY.size();
-      fs::path p ;
-      bool givenLen = false , readMode = false , makeFile = false;
-
-      for(int j=1 ;j<tokens.size() ;j++) {
-        if(is_number(tokens[j])) {
-          i = i-stoi(tokens[j])+1;
-          givenLen = true;
+      else if(c == 'a') {
+        readMode = true;
+        ofstream File(p.string(),ios::app);
+        for(int j=lastAppend; j<=HISTORY.size(); j++) {
+          File<<HISTORY[j-1]<<"\n";
         }
-        else if(tokens[j][0] == '-') {
-          for(int k=1 ;k<tokens[j].size() ;k++) {
-            extensions.push_back(tokens[j][k]);
-            if(tokens[j][k] == 'w') makeFile = true;
-          }
+        File.close();
+        lastAppend = HISTORY.size() + 1;
+      }
+    }
+
+    if(!readMode) {
+      for(;i<=HISTORY.size();i++) {
+        str+=to_string(i)+"  "+HISTORY[i-1]+"\n";
+      }
+    }
+  }
+  else if(tokens[0] == "ls") {
+    string sep = " ";
+    string p = "";
+
+    if(tokens.size() > 1) {
+      for(int i=1 ;i<maxIDX ;i++) {
+        if(tokens[i][0] == '-') {
+          sep = "\n";
         }
         else {
-          if(fs::exists(fs::path(tokens[j]))) {
-            p = fs::path(tokens[j]);
-          }
-          else if(makeFile) {
-            p = createPathTo(tokens[j]);
-          }
-        }
-      }
-
-      if(!givenLen) i = 1;
-
-      for(char c : extensions) {
-        if(c == 'r') {
-          readMode = true;
-          fstream File(p.string());
-          string lines;
-          while(getline(File,lines)) {
-            HISTORY.push_back(lines);
-          }
-          File.close();
-        }
-        else if(c == 'w') {
-          readMode = true;
-          ofstream File(p.string());
-          for(const string& s : HISTORY) {
-            File<<s+"\n";
-          }
-          File.close();
-        }
-        else if(c == 'a') {
-          readMode = true;
-          ofstream File(p.string(),ios::app);
-          for(int j=lastAppend; j<=HISTORY.size(); j++) {
-            File<<HISTORY[j-1]<<"\n";
-          }
-          File.close();
-          lastAppend = HISTORY.size() + 1;
-        }
-      }
-
-      if(!readMode) {
-        for(;i<=HISTORY.size();i++) {
-          str+=to_string(i)+"  "+HISTORY[i-1]+"\n";
+          p = tokens[i];
         }
       }
     }
-    else if(tokens[0] == "ls") {
-      string sep = " ";
-      string p = "";
 
-      if(tokens.size() > 1) {
-        for(int i=1 ;i<maxIDX ;i++) {
-          if(tokens[i][0] == '-') {
-            sep = "\n";
-          }
-          else {
-            p = tokens[i];
-          }
+    if(!p.size()) p = ".";
+    
+    if(!fs::exists(fs::path(p))) {
+      errorstr += "ls: " + p + ": No such file or directory\n";
+    }
+    else {
+      vector<string> filesListed;
+      for(const auto& files : fs::directory_iterator(p)) {
+        filesListed.emplace_back(files.path().filename().string());
+      } 
+
+      sort(filesListed.begin() , filesListed.end());
+      for(const string& s : filesListed) {
+        str = str + s + sep;
+      }
+    }
+  }
+  else if(tokens[0] == "wc") {
+    string text = "";
+    for(int i=1 ;i<tokens.size() ;i++) {
+      if(tokens[i][0] == '-') {
+        for(int j=1 ;j<tokens[i].size() ;j++) {
+          extensions.push_back(tokens[i][j]);
         }
       }
+      else if(fs::exists(fs::path(tokens[i]))) {
+        fstream textFile(tokens[i]);
+        string lines;
+        while(getline(textFile,lines)) text+=lines+"\n";
+        textFile.close();
+      }
+    }
 
-      if(!p.size()) p = ".";
-      
-      if(!fs::exists(fs::path(p))) {
-        errorstr += "ls: " + p + ": No such file or directory\n";
+    text = text + " " + input;
+    int lines = count(text.begin() ,text.end() ,'\n');
+    int words = 0;
+    string temp = "";
+    for(char c : text) {
+      if(c == ' ') {
+        if(temp.size()) words++;
+        temp = "";
       }
       else {
-        vector<string> filesListed;
-        for(const auto& files : fs::directory_iterator(p)) {
-          filesListed.emplace_back(files.path().filename().string());
-        } 
+        temp += c;
+      }
+    }
+    if(temp.size()) words++;
 
-        sort(filesListed.begin() , filesListed.end());
-        for(const string& s : filesListed) {
-          str = str + s + sep;
-        }
-      }
+    int bytes = text.size()-1;
+    if(extensions.empty()) {
+      str = "\t"+to_string(lines)+"\t"+to_string(words)+"\t"+to_string(bytes)+'\n';
     }
-    else if(tokens[0] == "echo") {
-      for(int i=1 ;i<maxIDX ;i++) {
-        str+=tokens[i];
-        if(i != tokens.size()-1) str+=" ";
+    else {
+      bool l = false , w = false , s = false;
+      for(char c : extensions) {
+        if(c == 'l') l = true;
+        else if(c == 'w') w = true;
+        else if(c == 's') s = true;
       }
-      str+='\n';
+
+      if(l) str += "\t"+to_string(lines)+"\t";
+      if(w) str += "\t"+to_string(words)+"\t";
+      if(s) str += "\t"+to_string(bytes)+"\t";
+      str += '\n';
     }
-    else if(tokens[0] == "cat") {
+  }
+  else if(tokens[0] == "echo") {
+    for(int i=1 ;i<maxIDX ;i++) {
+      str+=tokens[i];
+      if(i != tokens.size()-1) str+=" ";
+    }
+    str+='\n';
+  }
+  else if(tokens[0] == "cat") {
+    if(tokens.size() == 1 && !input.empty()) {
+      str = input;
+    }
+    else {
       for(int i=1 ;i<maxIDX ;i++) {
         if(!fs::exists(fs::path(tokens[i]))) {
           errorstr += "cat: " + tokens[i] + ": No such file or directory" + '\n';
@@ -726,145 +747,271 @@ int main() {
       
       if(str.size()) str+='\n';
     }
-    else if(tokens[0] == "type") {
-      for(int i=1 ; i<maxIDX ;i++) {
-        if(commands[tokens[i]] == "sh") {
-          str = tokens[i] + " is a shell builtin" + '\n';
-        }
-        else {
-          fs::path p = checkExec(tokens[i]);
-          if(!p.empty()) {
-            str = tokens[i] + " is " + p.string() + '\n';
-          }
-          else {
-            errorstr += tokens[i] + ": not found" + '\n';
-          } 
-        }
-      }
-    }
-    else if(tokens[0] == "pwd") {
-      fs::path curr = fs::current_path();
-      str = curr.string()+'\n';
-    }
-    else if(tokens[0] == "cd") {
-      if(tokens.size() == 1) {
-        fs::current_path(fs::path(HOME));
-        continue;
-      }
-
-      vector<string> pathTokens = tokenizePATH(tokens[1]);
-
-      if(tokens[1][0] == '/') {
-        fs::path absPath = fs::path(tokens[1]);
-        if(fs::exists(absPath) && fs::is_directory(absPath)) {
-          fs::current_path(absPath);
-        }
-        else {
-          errorstr += "cd: " + tokens[1] + ": No such file or directory" + '\n';
-        }
-      }
-      else if(tokens[1][0] == '~') {
-        fs::path curr = generatePath(pathTokens);
-
-        if(fs::exists(curr) && fs::is_directory(curr)) {
-          fs::current_path(curr);
-        }
-        else {
-          errorstr += "cd: " + curr.string() + ": No such file or directory" + '\n';
-        }
+  }
+  else if(tokens[0] == "type") {
+    for(int i=1 ; i<maxIDX ;i++) {
+      if(commands[tokens[i]] == "sh") {
+        str = tokens[i] + " is a shell builtin" + '\n';
       }
       else {
-        fs::path curr = generatePath(pathTokens);
-        
-        if(fs::exists(curr) && fs::is_directory(curr)) {
-          fs::current_path(curr);
+        fs::path p = checkExec(tokens[i]);
+        if(!p.empty()) {
+          str = tokens[i] + " is " + p.string() + '\n';
         }
         else {
-          errorstr += "cd: " + curr.string() + ": No such file or directory" + '\n';
-        }
+          errorstr += tokens[i] + ": not found" + '\n';
+        } 
       }
-      
+    }
+  }
+  else if(tokens[0] == "pwd") {
+    fs::path curr = fs::current_path();
+    str = curr.string()+'\n';
+  }
+  else if(tokens[0] == "cd") {
+    if(tokens.size() == 1) {
+      fs::current_path(fs::path(HOME));
+      continue;
+    }
+
+    vector<string> pathTokens = tokenizePATH(tokens[1]);
+
+    if(tokens[1][0] == '/') {
+      fs::path absPath = fs::path(tokens[1]);
+      if(fs::exists(absPath) && fs::is_directory(absPath)) {
+        fs::current_path(absPath);
+      }
+      else {
+        errorstr += "cd: " + tokens[1] + ": No such file or directory" + '\n';
+      }
+    }
+    else if(tokens[1][0] == '~') {
+      fs::path curr = generatePath(pathTokens);
+
+      if(fs::exists(curr) && fs::is_directory(curr)) {
+        fs::current_path(curr);
+      }
+      else {
+        errorstr += "cd: " + curr.string() + ": No such file or directory" + '\n';
+      }
     }
     else {
-      fs::path isExec = checkExec(tokens[0]);
-
-      if(isExec.empty()) {
-        errorstr += cmd + ": command not found" + '\n';
+      fs::path curr = generatePath(pathTokens);
+      
+      if(fs::exists(curr) && fs::is_directory(curr)) {
+        fs::current_path(curr);
       }
       else {
-        vector<char*> args;
-        for(auto& t : tokens) {
-          args.push_back(const_cast<char*>(t.c_str()));
-        }
-        args.push_back(NULL);
-
-        pid_t pid = fork();
-
-        if(pid == 0) {
-          execvp(isExec.string().c_str() , args.data());
-        }
-        else {
-          int status;
-          waitpid(pid,&status,0);
-        }
+        errorstr += "cd: " + curr.string() + ": No such file or directory" + '\n';
       }
     }
+    
+  }
+  else {
+    fs::path isExec = checkExec(tokens[0]);
 
-    if(!append && !overWrite) {
+    if(isExec.empty()) {
+      errorstr += cmd + ": command not found" + '\n';
+    }
+    else {
+      vector<char*> args;
+      for(auto& t : tokens) {
+        args.push_back(const_cast<char*>(t.c_str()));
+      }
+      args.push_back(NULL);
+
+      pid_t pid = fork();
+
+      if(pid == 0) {
+        execvp(isExec.string().c_str() , args.data());
+      }
+      else {
+        int status;
+        waitpid(pid,&status,0);
+      }
+    }
+  }
+
+  if(!append && !overWrite) {
+    if(str.size()) {
+      cout<<str;
+    }
+    else {
+      cout<<errorstr;
+    }
+  }
+  else {
+    fs::path outputFile = createPathTo(outputFilePath);
+
+    if(directerr) {
       if(str.size()) {
         cout<<str;
       }
-      else {
-        cout<<errorstr;
+
+      if(errorstr.size()) {
+        if(overWrite) {
+          ofstream File(outputFile.string());
+          if(File.is_open()) {
+            File<<errorstr;
+            File.close();
+          }
+        }
+        else {
+          ofstream File(outputFile.string() , ios::app);
+          if(File.is_open()) {
+            File<<errorstr;
+            File.close();
+          }
+        }
       }
     }
     else {
-      fs::path outputFile = createPathTo(outputFilePath);
+      if(errorstr.size()) {
+        cerr<<errorstr;
+      }
 
-      if(directerr) {
-        if(str.size()) {
-          cout<<str;
-        }
-
-        if(errorstr.size()) {
-          if(overWrite) {
-            ofstream File(outputFile.string());
-            if(File.is_open()) {
-              File<<errorstr;
-              File.close();
-            }
+      if(str.size()) {
+        if(overWrite) {
+          ofstream File(outputFile.string());
+          if(File.is_open()) {
+            File<<str;
+            File.close();
           }
-          else {
-            ofstream File(outputFile.string() , ios::app);
-            if(File.is_open()) {
-              File<<errorstr;
-              File.close();
-            }
+        }
+        else {
+          ofstream File(outputFile.string() , ios::app);
+          if(File.is_open()) {
+            File<<str;
+            File.close();
           }
         }
       }
-      else {
-        if(errorstr.size()) {
-          cerr<<errorstr;
-        }
+    }
+  }
+}
 
-        if(str.size()) {
-          if(overWrite) {
-            ofstream File(outputFile.string());
-            if(File.is_open()) {
-              File<<str;
-              File.close();
-            }
-          }
-          else {
-            ofstream File(outputFile.string() , ios::app);
-            if(File.is_open()) {
-              File<<str;
-              File.close();
-            }
-          }
-        }
+void executeCommand(string& cmd) {
+   vector<string> tokens = tokenize(cmd);
+   if(tokens.empty()) exit(1);
+  
+   fs::path isExec = checkExec(tokens[0]);
+  
+   if(isExec.empty()) {
+     cerr << cmd << ": command not found\n";
+     exit(1);
+   }
+  
+   vector<char*> args;
+   for(auto& t : tokens) {
+     args.push_back(const_cast<char*>(t.c_str()));
+   }
+   args.push_back(NULL);
+  
+   execvp(isExec.string().c_str(), args.data());
+  
+   cerr << "Failed to execute " << cmd << "\n";
+   exit(1);
+}
+
+void executePipeline(vector<string>& cmdsPiped) {
+   int numPipes = cmdsPiped.size() - 1;
+   int pipefds[numPipes][2];
+s
+   for(int i = 0; i < numPipes; i++) {
+     if(pipe(pipefds[i]) < 0) {
+       cerr << "Pipe creation failed\n";
+       return;
+     }
+   }
+  
+   vector<pid_t> pids;
+  
+   for(int i = 0; i < cmdsPiped.size(); i++) {
+      pid_t pid = fork();
+    
+      if(pid == 0) {
+        if(i > 0) {
+          dup2(pipefds[i-1][0], STDIN_FILENO);
       }
+      
+      if(i < numPipes) {
+         dup2(pipefds[i][1], STDOUT_FILENO);
+      }
+      
+      for(int j = 0; j < numPipes; j++) {
+        close(pipefds[j][0]);
+        close(pipefds[j][1]);
+      }
+      
+      executeCommand(cmdsPiped[i]);
+      exit(0);
+    }
+    else { 
+      pids.push_back(pid);
+    }
+  }
+  
+  for(int i = 0; i < numPipes; i++) {
+    close(pipefds[i][0]);
+    close(pipefds[i][1]);
+  }
+  
+  for(pid_t pid : pids) {
+    waitpid(pid, NULL, 0);
+  }    
+}
+
+int main() {
+  cout<<unitbuf;
+  cerr<<unitbuf;
+
+  for(const string& str : builtins) commands[str] = "sh";
+  for(const string& str : defaultcmds) checkAutoCompletion->insert(str);
+  PATH = getenv("PATH");
+  HOME = getenv("HOME");
+
+  histfileEnv = getenv("HISTFILE");
+  if(histfileEnv != nullptr) {
+    HISTORYFILE = string(histfileEnv);
+    histFilePath = createPathTo(HISTORYFILE);
+    if(fs::exists(histFilePath)) {
+      fstream hfile(histFilePath.string());
+      string hlines;
+      while(getline(hfile,hlines)) {
+        HISTORY.push_back(hlines);
+      }
+      hfile.close();
+    }
+  }
+  
+  enableRawMode();
+  currHistPtr=0;
+  lastAppend = 1;
+
+  while(true) {
+    cout << "$ ";
+    extensions.clear();
+    string cmd ;
+    cmd = readCommand();
+
+    HISTORY.emplace_back(cmd);
+    currHistPtr = HISTORY.size();
+    vector<string> cmdsPiped;
+    int st = 0;
+
+    for(int i=0 ;i<cmd.size() ;i++) {
+      if(cmd[i] == '|') {
+        cmdsPiped.push_back(cmd.substr(st,i-st));
+        st = i+1;
+      }
+    }
+    cmdsPiped.push_back(cmd.substr(st));
+    
+    if(cmdsPiped.size() == 1) {
+      iter(cmdsPiped[0]);
+    }
+    else {
+      executePipeline(cmdsPiped);
     }
   }
 
