@@ -530,7 +530,7 @@ void iter(string& cmd) {
   string str = "" , errorstr = "";
   
   vector<string> tokens = tokenize(cmd);
-  if(tokens.empty()) continue;
+  if(tokens.empty()) return;
   int maxIDX = tokens.size();
   
   string outputFilePath = "";
@@ -565,7 +565,7 @@ void iter(string& cmd) {
       }
       File.close();
     }
-    break;
+    exit(0);
   }
   else if(tokens[0] == "history") {
     int i = HISTORY.size();
@@ -678,7 +678,6 @@ void iter(string& cmd) {
       }
     }
 
-    text = text + " " + input;
     int lines = count(text.begin() ,text.end() ,'\n');
     int words = 0;
     string temp = "";
@@ -916,7 +915,7 @@ void executeCommand(string& cmd) {
 void executePipeline(vector<string>& cmdsPiped) {
    int numPipes = cmdsPiped.size() - 1;
    int pipefds[numPipes][2];
-s
+
    for(int i = 0; i < numPipes; i++) {
      if(pipe(pipefds[i]) < 0) {
        cerr << "Pipe creation failed\n";
