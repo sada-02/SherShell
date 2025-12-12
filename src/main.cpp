@@ -36,6 +36,7 @@ vector<char> extensions;
 int lastAppend;
 char* histfileEnv;
 fs::path histFilePath;
+bool rawModeEnabled = false;
 
 #ifdef _WIN32
   DWORD orig_mode;
@@ -322,10 +323,8 @@ string longestCommonPrefix(vector<string>& words) {
 }
 
 string readCommand() {
-  bool isTTY = isatty(STDIN_FILENO);
-  
   // In non-interactive mode, just read a line directly
-  if(!isTTY) {
+  if(!rawModeEnabled) {
     string cmd;
     getline(cin, cmd);
     return cmd;
@@ -342,7 +341,7 @@ string readCommand() {
     if(c == '\n' || c == '\r') {
       cmd = cmd + temp;
       temp = "";
-      if(isTTY) cout<<'\n'<<flush;
+      cout<<'\n'<<flush;
       break;
     }
     else if(c == '\x1b') {
@@ -352,16 +351,16 @@ string readCommand() {
       if(seq1 == '[') {
         if(seq2 == 'A') {
           if(currHistPtr > 0 && HISTORY.size() > 0) {
-            if(isTTY) for(int i=0; i<temp.size()+cmd.size(); i++) cout<<"\b \b";
+            for(int i=0; i<temp.size()+cmd.size(); i++) cout<<"\b \b";
             currHistPtr--;
             cmd = HISTORY[currHistPtr];
-            if(isTTY) cout<<cmd<<flush;
+            cout<<cmd<<flush;
             temp = "";
           }
         }
         else if(seq2 == 'B') {
           if(currHistPtr < HISTORY.size()) {
-            if(isTTY) for(int i=0; i<temp.size()+cmd.size(); i++) cout<<"\b \b";
+            for(int i=0; i<temp.size()+cmd.size(); i++) cout<<"\b \b";
             currHistPtr++;
             if(currHistPtr >= HISTORY.size()) {
               cmd = "";
@@ -369,7 +368,7 @@ string readCommand() {
             } 
             else {
               cmd = HISTORY[currHistPtr];
-              if(isTTY) cout<<cmd<<flush;
+              cout<<cmd<<flush;
               temp = "";
             }
           }
@@ -379,7 +378,7 @@ string readCommand() {
     else if(c == ' ') {
       cmd += temp + " ";
       temp = "";
-      if(isTTY) cout<<' '<<flush;
+      cout<<' '<<flush;
       onetab = false;
     }
     else if(c == '\t') {
@@ -387,9 +386,9 @@ string readCommand() {
       sort(words.begin() , words.end());
 
       if(words.size() == 1) {
-        if(isTTY) for(int i=0 ;i<temp.size() ;i++) cout<<"\b \b";
+        for(int i=0 ;i<temp.size() ;i++) cout<<"\b \b";
         cmd += *words.begin() + " ";
-        if(isTTY) cout<<*words.begin()<<' '<<flush;
+        cout<<*words.begin()<<' '<<flush;
         temp = "";
         onetab = false;
         continue;
@@ -397,8 +396,8 @@ string readCommand() {
       else if(words.size() > 1) {
         string lcp = longestCommonPrefix(words);
         if(lcp != temp) {
-          if(isTTY) for(int i=0 ;i<temp.size() ;i++) cout<<"\b \b";
-          if(isTTY) cout<<lcp<<flush;
+          for(int i=0 ;i<temp.size() ;i++) cout<<"\b \b";
+          cout<<lcp<<flush;
           temp = lcp;
           onetab = false;
           continue;
@@ -408,9 +407,9 @@ string readCommand() {
       words = findExecWith(temp);
       sort(words.begin() , words.end());
       if(words.size() == 1) {
-        if(isTTY) for(int i=0 ;i<temp.size() ;i++) cout<<"\b \b";
+        for(int i=0 ;i<temp.size() ;i++) cout<<"\b \b";
         cmd += *words.begin() + " ";
-        if(isTTY) cout<<*words.begin()<<' '<<flush;
+        cout<<*words.begin()<<' '<<flush;
         temp = "";
         onetab = false;
         continue;
@@ -418,8 +417,8 @@ string readCommand() {
       else if(words.size() > 1) {
         string lcp = longestCommonPrefix(words);
         if(lcp != temp) {
-          if(isTTY) for(int i=0 ;i<temp.size() ;i++) cout<<"\b \b";
-          if(isTTY) cout<<lcp<<flush;
+          for(int i=0 ;i<temp.size() ;i++) cout<<"\b \b";
+          cout<<lcp<<flush;
           temp = lcp;
           onetab = false;
           continue;
@@ -427,24 +426,22 @@ string readCommand() {
       }
 
       if(onetab) {
-        if(isTTY) {
-          cout<<'\n';
-          for(const string& s : words) {
-            cout<<s<<"  ";
-          }
-          cout<<'\n'<<flush;
-          cout<<"$ "<<cmd+temp<<flush;
+        cout<<'\n';
+        for(const string& s : words) {
+          cout<<s<<"  ";
         }
+        cout<<'\n'<<flush;
+        cout<<"$ "<<cmd+temp<<flush;
         onetab = false;
       }
       else {
-        if(isTTY) cout<<'\x07'<<flush;
+        cout<<'\x07'<<flush;
         onetab = true;
       }
     }
     else {
       temp += c;
-      if(isTTY) cout<<c<<flush;
+      cout<<c<<flush;
       onetab = false;
     }
   }
@@ -1008,12 +1005,13 @@ int main() {
   // Only enable raw mode if stdin is a terminal
   if(isatty(STDIN_FILENO)) {
     enableRawMode();
+    rawModeEnabled = true;
   }
   currHistPtr=0;
   lastAppend = 1;
 
   while(true) {
-    if(isatty(STDIN_FILENO)) cout << "$ ";
+    if(rawModeEnabled) cout << "$ ";
     extensions.clear();
     string cmd ;
     cmd = readCommand();
