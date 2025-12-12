@@ -940,15 +940,38 @@ void executeCommand(string& cmd) {
    vector<string> tokens = tokenize(cmd);
    if(tokens.empty()) exit(1);
   
-   // DEBUG
-   cerr << "[DEBUG executeCommand] cmd='" << cmd << "' tokens[0]='" << tokens[0] << "'" << endl;
-  
-   if(!tokens.empty() && commands[tokens[0]] == "sh") {
-     cerr << "[DEBUG] Calling iter() for builtin" << endl;
-     iter(cmd, false, true); 
+   // Handle builtins directly in pipeline context
+   if(tokens[0] == "echo") {
+     for(int i=1; i<tokens.size(); i++) {
+       cout << tokens[i];
+       if(i != tokens.size()-1) cout << " ";
+     }
+     cout << "\n";
+     exit(0);
+   }
+   else if(tokens[0] == "type") {
+     for(int i=1; i<tokens.size(); i++) {
+       if(commands[tokens[i]] == "sh") {
+         cout << tokens[i] << " is a shell builtin\n";
+       }
+       else {
+         fs::path p = checkExec(tokens[i]);
+         if(!p.empty()) {
+           cout << tokens[i] << " is " << p.string() << "\n";
+         }
+         else {
+           cerr << tokens[i] << ": not found\n";
+         }
+       }
+     }
+     exit(0);
+   }
+   else if(tokens[0] == "pwd") {
+     cout << fs::current_path().string() << "\n";
      exit(0);
    }
   
+   // External command execution
    fs::path isExec = checkExec(tokens[0]);
   
    if(isExec.empty()) {
