@@ -721,7 +721,6 @@ void iter(string& cmd, bool inPipeline = false) {
   }
   else if(tokens[0] == "cat") {
     for(int i=1 ;i<maxIDX ;i++) {
-      
       if(!fs::exists(fs::path(tokens[i]))) {
         errorstr += "cat: " + tokens[i] + ": No such file or directory" + '\n';
         continue;
