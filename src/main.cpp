@@ -276,7 +276,7 @@ vector<string> tokenize(string& query) {
 }
 
 vector<string> findFile(const string& str) {
-  Trie* executablePaths = new Trie();
+  Trie* filePaths = new Trie();
   string dir;
   stringstream path(PATH);
 
@@ -291,14 +291,14 @@ vector<string> findFile(const string& str) {
         if((perms & fs::perms::owner_exec) != fs::perms::none ||
           (perms & fs::perms::group_exec) != fs::perms::none ||
           (perms & fs::perms::others_exec) != fs::perms::none) {
-          executablePaths->insert(d.path().filename().string());    
+          filePaths->insert(d.path().filename().string());    
         }
 
         auto ext = d.path().extension().string();
         if(ext == ".txt" || ext == ".md" || ext == ".log" || ext == ".csv" ||
           ext == ".json" || ext == ".xml" || ext == ".yaml" || ext == ".yml" ||
           ext == ".cpp" || ext == ".c" || ext == ".h" || ext == ".hpp") {
-          textPaths->insert(d.path().filename().string());
+          filePaths->insert(d.path().filename().string());
         }
       }
     } 
@@ -307,8 +307,8 @@ vector<string> findFile(const string& str) {
     }
   }
 
-  vector<string> ret = executablePaths->startWith(str);
-  delete executablePaths;
+  vector<string> ret = filePaths->startWith(str);
+  delete filePaths;
   return ret;
 }
 
