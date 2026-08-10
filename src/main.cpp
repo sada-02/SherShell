@@ -278,10 +278,11 @@ vector<string> tokenize(string& query) {
 vector<string> findFileWith(const string& str) {
   Trie* filePaths = new Trie();
 
-  string pathProvided = "";
+  string pathProvided = "" , incompletePrefix = "";
   for(int i=str.size()-1 ;i>=0 ;i--) {
     if(str[i] == '/') {
       pathProvided = str.substr(0,i+1);
+      incompletePrefix = str.substr(i+1);
     }
   }
 
@@ -319,7 +320,7 @@ vector<string> findFileWith(const string& str) {
     }
   }
 
-  vector<string> ret = filePaths->startWith(str);
+  vector<string> ret = filePaths->startWith(incompletePrefix);
   delete filePaths;
   return ret;
 }
