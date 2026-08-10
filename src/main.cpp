@@ -275,7 +275,7 @@ vector<string> tokenize(string& query) {
   return tokens;
 }
 
-vector<string> findFile(const string& str) {
+vector<string> findFile(const string& str, bool findTextFiles = false) {
   Trie* filePaths = new Trie();
   string dir;
   stringstream path(PATH);
@@ -287,18 +287,21 @@ vector<string> findFile(const string& str) {
       for(const auto& d : fs::directory_iterator(dir)) {
         if(fs::is_directory(d.path())) continue;
         
-        auto perms = fs::status(d.path()).permissions();
-        if((perms & fs::perms::owner_exec) != fs::perms::none ||
-          (perms & fs::perms::group_exec) != fs::perms::none ||
-          (perms & fs::perms::others_exec) != fs::perms::none) {
-          filePaths->insert(d.path().filename().string());    
+        if(findTextFiles) {
+          auto ext = d.path().extension().string();
+          if(ext == ".txt" || ext == ".md" || ext == ".log" || ext == ".csv" ||
+            ext == ".json" || ext == ".xml" || ext == ".yaml" || ext == ".yml" ||
+            ext == ".cpp" || ext == ".c" || ext == ".h" || ext == ".hpp") {
+            filePaths->insert(d.path().filename().string());
+          }
         }
-
-        auto ext = d.path().extension().string();
-        if(ext == ".txt" || ext == ".md" || ext == ".log" || ext == ".csv" ||
-          ext == ".json" || ext == ".xml" || ext == ".yaml" || ext == ".yml" ||
-          ext == ".cpp" || ext == ".c" || ext == ".h" || ext == ".hpp") {
-          filePaths->insert(d.path().filename().string());
+        else {
+          auto perms = fs::status(d.path()).permissions();
+          if((perms & fs::perms::owner_exec) != fs::perms::none ||
+            (perms & fs::perms::group_exec) != fs::perms::none ||
+            (perms & fs::perms::others_exec) != fs::perms::none) {
+            filePaths->insert(d.path().filename().string());    
+          }
         }
       }
     } 
@@ -380,7 +383,16 @@ string readCommand() {
       onetab = false;
     }
     else if(c == '\t') {
-      vector<string> words = checkAutoCompletion->startWith(temp);
+      vector<string> cmdTokens = tokenize(cmd);
+      vector<string> words;
+
+      if(!cmdTokens.empty() && (cmdTokens[0] == "wc" || cmdTokens[0] == "cat")) {
+        words = findFile(temp, true);
+      }
+      else {
+        words = checkAutoCompletion->startWith(temp);
+      }
+
       sort(words.begin() , words.end());
 
       if(words.size() == 1) {
@@ -402,8 +414,11 @@ string readCommand() {
         }
       }
 
-      words = findFile(temp);
-      sort(words.begin() , words.end());
+      if(cmdTokens.empty() || (cmdTokens[0] != "wc" && cmdTokens[0] != "cat")) {
+        words = findFile(temp);
+        sort(words.begin() , words.end());
+      }
+
       if(words.size() == 1) {
         for(int i=0 ;i<temp.size() ;i++) cout<<"\b \b";
         cmd += *words.begin() + " ";
