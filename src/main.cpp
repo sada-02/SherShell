@@ -276,73 +276,52 @@ vector<string> tokenize(string& query) {
 }
 
 vector<string> findFileWith(const string& str) {
-  vector<string> ret;
-  string pathProvided = "";
-  string incompletePrefix = str;
-  size_t lastSlash = str.find_last_of('/');
+  Trie* filePaths = new Trie();
 
-  if(lastSlash != string::npos) {
-    pathProvided = str.substr(0, lastSlash + 1);
-    incompletePrefix = str.substr(lastSlash + 1);
+  string pathProvided = "" , incompletePrefix = "";
+  for(int i=str.size()-1 ;i>=0 ;i--) {
+    if(str[i] == '/') {
+      pathProvided = str.substr(0,i+1);
+      incompletePrefix = str.substr(i+1);
+    }
   }
 
-  auto addMatches = [&](const fs::path& searchDir, const string& prefixToAdd) {
-    if(!fs::exists(searchDir)) return;
+  vector<fs::path> searchDirs = {pathProvided.empty() ? fs::current_path() : fs::path(pathProvided)};
+  string dir;
+  stringstream path(PATH);
+
+  while(getline(path , dir , delimiter)) {
+    searchDirs.emplace_back(dir);
+  }
+
+  for(const fs::path& searchDir : searchDirs) {
+    if(!fs::exists(searchDir) || !fs::is_directory(searchDir)) continue;
 
     try {
       for(const auto& d : fs::directory_iterator(searchDir)) {
-        string entryName = d.path().filename().string();
-        if(!incompletePrefix.size() && !entryName.empty() && entryName[0] == '.') {
-          continue;
+        if(fs::is_directory(d.path())) continue;  
+        auto perms = fs::status(d.path()).permissions();
+        if((perms & fs::perms::owner_exec) != fs::perms::none ||
+          (perms & fs::perms::group_exec) != fs::perms::none ||
+          (perms & fs::perms::others_exec) != fs::perms::none) {
+          filePaths->insert(d.path().filename().string());    
         }
-        if(!incompletePrefix.empty() && incompletePrefix[0] != '.' && !entryName.empty() && entryName[0] == '.') {
-          continue;
-        }
-
-        if(fs::is_directory(d.path())) {
-           if(entryName.rfind(incompletePrefix, 0) == 0) {
-            ret.push_back(prefixToAdd + entryName + "/");
-           }
-        }
-        else {
-          auto perms = fs::status(d.path()).permissions();
-          bool isExecutable = (perms & fs::perms::owner_exec) != fs::perms::none ||
-            (perms & fs::perms::group_exec) != fs::perms::none ||
-            (perms & fs::perms::others_exec) != fs::perms::none;
-
-          auto ext = d.path().extension().string();
-          bool isTextLike = ext == ".txt" || ext == ".md" || ext == ".log" || ext == ".csv" ||
-            ext == ".json" || ext == ".xml" || ext == ".yaml" || ext == ".yml" ||
-            ext == ".cpp" || ext == ".c" || ext == ".h" || ext == ".hpp";
-
-          if(isExecutable || isTextLike) {
-            if(entryName.rfind(incompletePrefix, 0) == 0) {
-              ret.push_back(prefixToAdd + entryName);
-            }
-          }
+      
+        auto ext = d.path().extension().string();
+        if(ext == ".txt" || ext == ".md" || ext == ".log" || ext == ".csv" ||
+          ext == ".json" || ext == ".xml" || ext == ".yaml" || ext == ".yml" ||
+          ext == ".cpp" || ext == ".c" || ext == ".h" || ext == ".hpp") {
+          filePaths->insert(d.path().filename().string());
         }
       }
-    }
+    } 
     catch(...) {
-      return;
-    }
-  };
-
-  if(!pathProvided.empty()) {
-    addMatches(fs::path(pathProvided), pathProvided);
-  }
-  else {
-    addMatches(fs::current_path(), "");
-
-    string dir;
-    stringstream path(PATH);
-    while(getline(path , dir , delimiter)) {
-      addMatches(fs::path(dir), "");
+      continue;
     }
   }
 
-  sort(ret.begin() , ret.end());
-  ret.erase(unique(ret.begin() , ret.end()), ret.end());
+  vector<string> ret = filePaths->startWith(incompletePrefix);
+  delete filePaths;
   return ret;
 }
 
@@ -440,41 +419,11 @@ string readCommand() {
 
       words = findFileWith(prefix);
       sort(words.begin() , words.end());
-      if(!prefix.size() && !cmd.empty() && words.size() > 0) {
+      if(words.size() == 1) {
         for(int i=0 ;i<temp.size() ;i++) cout<<"\b \b";
-        const string& completion = words[0];
-        bool isDirectoryCompletion = !completion.empty() && completion.back() == '/';
-        if(isDirectoryCompletion) {
-          temp = completion;
-        }
-        else {
-          cmd += completion + " ";
-          temp = "";
-        }
-        cout<<completion;
-        if(!isDirectoryCompletion) {
-          cout<<' ';
-        }
-        cout<<flush;
-        onetab = false;
-        continue;
-      }
-      else if(words.size() == 1) {
-        for(int i=0 ;i<temp.size() ;i++) cout<<"\b \b";
-        const string& completion = words[0];
-        bool isDirectoryCompletion = !completion.empty() && completion.back() == '/';
-        if(isDirectoryCompletion) {
-          temp = completion;
-        }
-        else {
-          cmd += completion + " ";
-          temp = "";
-        }
-        cout<<completion;
-        if(!isDirectoryCompletion) {
-          cout<<' ';
-        }
-        cout<<flush;
+        cmd += *words.begin() + " ";
+        cout<<*words.begin()<<' '<<flush;
+        temp = "";
         onetab = false;
         continue;
       }
