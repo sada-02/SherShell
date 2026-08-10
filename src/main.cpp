@@ -287,26 +287,32 @@ vector<string> findFileWith(const string& str) {
   }
 
   auto addMatches = [&](const fs::path& searchDir, const string& prefixToAdd) {
-    if(!fs::exists(searchDir) || !fs::is_directory(searchDir)) return;
+    if(!fs::exists(searchDir)) return;
 
     try {
       for(const auto& d : fs::directory_iterator(searchDir)) {
-        if(fs::is_directory(d.path())) continue;
+        if(fs::is_directory(d.path())) {
+           string foldername = d.path().filename().string();
+           if(foldername.rfind(incompletePrefix, 0) == 0) {
+            ret.push_back(prefixToAdd + foldername);
+           }
+        }
+        else {
+          auto perms = fs::status(d.path()).permissions();
+          bool isExecutable = (perms & fs::perms::owner_exec) != fs::perms::none ||
+            (perms & fs::perms::group_exec) != fs::perms::none ||
+            (perms & fs::perms::others_exec) != fs::perms::none;
 
-        auto perms = fs::status(d.path()).permissions();
-        bool isExecutable = (perms & fs::perms::owner_exec) != fs::perms::none ||
-          (perms & fs::perms::group_exec) != fs::perms::none ||
-          (perms & fs::perms::others_exec) != fs::perms::none;
+          auto ext = d.path().extension().string();
+          bool isTextLike = ext == ".txt" || ext == ".md" || ext == ".log" || ext == ".csv" ||
+            ext == ".json" || ext == ".xml" || ext == ".yaml" || ext == ".yml" ||
+            ext == ".cpp" || ext == ".c" || ext == ".h" || ext == ".hpp";
 
-        auto ext = d.path().extension().string();
-        bool isTextLike = ext == ".txt" || ext == ".md" || ext == ".log" || ext == ".csv" ||
-          ext == ".json" || ext == ".xml" || ext == ".yaml" || ext == ".yml" ||
-          ext == ".cpp" || ext == ".c" || ext == ".h" || ext == ".hpp";
-
-        if(isExecutable || isTextLike) {
-          string filename = d.path().filename().string();
-          if(filename.rfind(incompletePrefix, 0) == 0) {
-            ret.push_back(prefixToAdd + filename);
+          if(isExecutable || isTextLike) {
+            string filename = d.path().filename().string();
+            if(filename.rfind(incompletePrefix, 0) == 0) {
+              ret.push_back(prefixToAdd + filename);
+            }
           }
         }
       }
