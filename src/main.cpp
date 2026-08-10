@@ -327,8 +327,16 @@ vector<string> findFileWith(const string& str) {
   }
   else {
     addMatches(fs::current_path(), "");
+
+    string dir;
+    stringstream path(PATH);
+    while(getline(path , dir , delimiter)) {
+      addMatches(fs::path(dir), "");
+    }
   }
 
+  sort(ret.begin() , ret.end());
+  ret.erase(unique(ret.begin() , ret.end()), ret.end());
   return ret;
 }
 
