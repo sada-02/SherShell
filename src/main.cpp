@@ -886,49 +886,28 @@ void iter(string& cmd, bool inPipeline = false) {
   else {
     fs::path outputFile = createPathTo(outputFilePath);
 
-    if(directerr) {
-      if(str.size()) {
-        cout<<str;
+    auto writeToFile = [&](const string& contents) {
+      if(!contents.size()) {
+        return;
       }
 
-      if(errorstr.size()) {
-        if(overWrite) {
-          ofstream File(outputFile.string());
-          if(File.is_open()) {
-            File<<errorstr;
-            File.close();
-          }
-        }
-        else {
-          ofstream File(outputFile.string() , ios::app);
-          if(File.is_open()) {
-            File<<errorstr;
-            File.close();
-          }
-        }
+      ofstream File(outputFile.string(), append ? ios::app : ios::trunc);
+      if(File.is_open()) {
+        File<<contents;
+        File.flush();
+        File.close();
       }
+    };
+
+    if(directerr) {
+      writeToFile(errorstr);
     }
     else {
       if(errorstr.size()) {
         cerr<<errorstr;
       }
 
-      if(str.size()) {
-        if(overWrite) {
-          ofstream File(outputFile.string());
-          if(File.is_open()) {
-            File<<str;
-            File.close();
-          }
-        }
-        else {
-          ofstream File(outputFile.string() , ios::app);
-          if(File.is_open()) {
-            File<<str;
-            File.close();
-          }
-        }
-      }
+      writeToFile(str);
     }
   }
 }
