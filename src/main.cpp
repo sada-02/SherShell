@@ -430,16 +430,18 @@ string readCommand() {
         for(int i=0 ;i<temp.size() ;i++) cout<<"\b \b";
         const string& completion = *words.begin();
         bool isDirectoryCompletion = !completion.empty() && completion.back() == '/';
-        cmd += completion;
-        if(!isDirectoryCompletion) {
-          cmd += " ";
+        if(isDirectoryCompletion) {
+          temp = completion;
+        }
+        else {
+          cmd += completion + " ";
+          temp = "";
         }
         cout<<completion;
         if(!isDirectoryCompletion) {
           cout<<' ';
         }
         cout<<flush;
-        temp = "";
         onetab = false;
         continue;
       }
