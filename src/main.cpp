@@ -383,10 +383,10 @@ string readCommand() {
       onetab = false;
     }
     else if(c == '\t') {
-      vector<string> cmdTokens = tokenize(cmd);
       vector<string> words;
+      bool completingArgument = cmd.find(' ') != string::npos;
 
-      if(!cmdTokens.empty() && (cmdTokens.size()>1)) {
+      if(completingArgument) {
         words = findFile(temp, true);
       }
       else {
@@ -394,30 +394,6 @@ string readCommand() {
       }
 
       sort(words.begin() , words.end());
-
-      if(words.size() == 1) {
-        for(int i=0 ;i<temp.size() ;i++) cout<<"\b \b";
-        cmd += *words.begin() + " ";
-        cout<<*words.begin()<<' '<<flush;
-        temp = "";
-        onetab = false;
-        continue;
-      }
-      else if(words.size() > 1) {
-        string lcp = longestCommonPrefix(words);
-        if(lcp != temp) {
-          for(int i=0 ;i<temp.size() ;i++) cout<<"\b \b";
-          cout<<lcp<<flush;
-          temp = lcp;
-          onetab = false;
-          continue;
-        }
-      }
-
-      if(cmdTokens.empty() || (cmdTokens.size()>1)) {
-        words = findFile(temp);
-        sort(words.begin() , words.end());
-      }
 
       if(words.size() == 1) {
         for(int i=0 ;i<temp.size() ;i++) cout<<"\b \b";
