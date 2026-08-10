@@ -434,9 +434,28 @@ string readCommand() {
 
       words = findFileWith(prefix);
       sort(words.begin() , words.end());
-      if(words.size() == 1) {
+      if(!prefix.size() && !cmd.empty() && words.size() > 0) {
         for(int i=0 ;i<temp.size() ;i++) cout<<"\b \b";
-        const string& completion = *words.begin();
+        const string& completion = words[0];
+        bool isDirectoryCompletion = !completion.empty() && completion.back() == '/';
+        if(isDirectoryCompletion) {
+          temp = completion;
+        }
+        else {
+          cmd += completion + " ";
+          temp = "";
+        }
+        cout<<completion;
+        if(!isDirectoryCompletion) {
+          cout<<' ';
+        }
+        cout<<flush;
+        onetab = false;
+        continue;
+      }
+      else if(words.size() == 1) {
+        for(int i=0 ;i<temp.size() ;i++) cout<<"\b \b";
+        const string& completion = words[0];
         bool isDirectoryCompletion = !completion.empty() && completion.back() == '/';
         if(isDirectoryCompletion) {
           temp = completion;
