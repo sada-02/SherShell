@@ -275,7 +275,7 @@ vector<string> tokenize(string& query) {
   return tokens;
 }
 
-vector<string> findExecWith(const string& str) {
+vector<string> findFile(const string& str) {
   Trie* executablePaths = new Trie();
   string dir;
   stringstream path(PATH);
@@ -292,6 +292,13 @@ vector<string> findExecWith(const string& str) {
           (perms & fs::perms::group_exec) != fs::perms::none ||
           (perms & fs::perms::others_exec) != fs::perms::none) {
           executablePaths->insert(d.path().filename().string());    
+        }
+
+        auto ext = d.path().extension().string();
+        if(ext == ".txt" || ext == ".md" || ext == ".log" || ext == ".csv" ||
+          ext == ".json" || ext == ".xml" || ext == ".yaml" || ext == ".yml" ||
+          ext == ".cpp" || ext == ".c" || ext == ".h" || ext == ".hpp") {
+          textPaths->insert(d.path().filename().string());
         }
       }
     } 
@@ -395,7 +402,7 @@ string readCommand() {
         }
       }
 
-      words = findExecWith(temp);
+      words = findFile(temp);
       sort(words.begin() , words.end());
       if(words.size() == 1) {
         for(int i=0 ;i<temp.size() ;i++) cout<<"\b \b";
