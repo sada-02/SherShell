@@ -277,7 +277,17 @@ vector<string> tokenize(string& query) {
 
 vector<string> findFileWith(const string& str) {
   Trie* filePaths = new Trie();
-  vector<fs::path> searchDirs = {fs::current_path()};
+
+  string pathProvided = "";
+  if(str.find('/') != str.end()) {
+    for(int i=str.size()-1 ;i>=0 ;i--) {
+      if(str[i] == '/') {
+        pathProvided = str.substr(0,i+1);
+      }
+    }
+  }
+
+  vector<fs::path> searchDirs = {pathProvided.empty() ? fs::current_path() : pathProvided};
   string dir;
   stringstream path(PATH);
 
