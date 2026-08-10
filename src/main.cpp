@@ -386,7 +386,7 @@ string readCommand() {
       vector<string> cmdTokens = tokenize(cmd);
       vector<string> words;
 
-      if(!cmdTokens.empty() && (cmdTokens[0] == "wc" || cmdTokens[0] == "cat")) {
+      if(!cmdTokens.empty() && (cmdTokens.size()>1)) {
         words = findFile(temp, true);
       }
       else {
@@ -414,7 +414,7 @@ string readCommand() {
         }
       }
 
-      if(cmdTokens.empty() || (cmdTokens[0] != "wc" && cmdTokens[0] != "cat")) {
+      if(cmdTokens.empty() || (cmdTokens.size()>1)) {
         words = findFile(temp);
         sort(words.begin() , words.end());
       }
