@@ -276,52 +276,59 @@ vector<string> tokenize(string& query) {
 }
 
 vector<string> findFileWith(const string& str) {
-  Trie* filePaths = new Trie();
+  vector<string> ret;
+  string pathProvided = "";
+  string incompletePrefix = str;
+  size_t lastSlash = str.find_last_of('/');
 
-  string pathProvided = "" , incompletePrefix = "";
-  for(int i=str.size()-1 ;i>=0 ;i--) {
-    if(str[i] == '/') {
-      pathProvided = str.substr(0,i+1);
-      incompletePrefix = str.substr(i+1);
-    }
+  if(lastSlash != string::npos) {
+    pathProvided = str.substr(0, lastSlash + 1);
+    incompletePrefix = str.substr(lastSlash + 1);
   }
 
-  vector<fs::path> searchDirs = {pathProvided.empty() ? fs::current_path() : fs::path(pathProvided)};
-  string dir;
-  stringstream path(PATH);
-
-  while(getline(path , dir , delimiter)) {
-    searchDirs.emplace_back(dir);
-  }
-
-  for(const fs::path& searchDir : searchDirs) {
-    if(!fs::exists(searchDir) || !fs::is_directory(searchDir)) continue;
+  auto addMatches = [&](const fs::path& searchDir, const string& prefixToAdd) {
+    if(!fs::exists(searchDir) || !fs::is_directory(searchDir)) return;
 
     try {
       for(const auto& d : fs::directory_iterator(searchDir)) {
-        if(fs::is_directory(d.path())) continue;  
+        if(fs::is_directory(d.path())) continue;
+
         auto perms = fs::status(d.path()).permissions();
-        if((perms & fs::perms::owner_exec) != fs::perms::none ||
+        bool isExecutable = (perms & fs::perms::owner_exec) != fs::perms::none ||
           (perms & fs::perms::group_exec) != fs::perms::none ||
-          (perms & fs::perms::others_exec) != fs::perms::none) {
-          filePaths->insert(d.path().filename().string());    
-        }
-      
+          (perms & fs::perms::others_exec) != fs::perms::none;
+
         auto ext = d.path().extension().string();
-        if(ext == ".txt" || ext == ".md" || ext == ".log" || ext == ".csv" ||
+        bool isTextLike = ext == ".txt" || ext == ".md" || ext == ".log" || ext == ".csv" ||
           ext == ".json" || ext == ".xml" || ext == ".yaml" || ext == ".yml" ||
-          ext == ".cpp" || ext == ".c" || ext == ".h" || ext == ".hpp") {
-          filePaths->insert(d.path().filename().string());
+          ext == ".cpp" || ext == ".c" || ext == ".h" || ext == ".hpp";
+
+        if(isExecutable || isTextLike) {
+          string filename = d.path().filename().string();
+          if(filename.rfind(incompletePrefix, 0) == 0) {
+            ret.push_back(prefixToAdd + filename);
+          }
         }
       }
-    } 
+    }
     catch(...) {
-      continue;
+      return;
+    }
+  };
+
+  if(!pathProvided.empty()) {
+    addMatches(fs::path(pathProvided), pathProvided);
+  }
+  else {
+    addMatches(fs::current_path(), "");
+
+    string dir;
+    stringstream path(PATH);
+    while(getline(path , dir , delimiter)) {
+      addMatches(fs::path(dir), "");
     }
   }
 
-  vector<string> ret = filePaths->startWith(incompletePrefix);
-  delete filePaths;
   return ret;
 }
 
