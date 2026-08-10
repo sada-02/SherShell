@@ -305,26 +305,6 @@ vector<string> findExecWith(const string& str) {
   return ret;
 }
 
-vector<string> findFilesWith(const string& str) {
-  vector<string> matches;
-
-  try {
-    for(const auto& entry : fs::directory_iterator(".")) {
-      if(fs::is_directory(entry.path())) continue;
-
-      string filename = entry.path().filename().string();
-      if(filename.rfind(str, 0) == 0) {
-        matches.push_back(filename);
-      }
-    }
-  }
-  catch(...) {
-    return {};
-  }
-
-  return matches;
-}
-
 string longestCommonPrefix(vector<string>& words) {
   if(words.empty()) return "";
 
@@ -393,33 +373,7 @@ string readCommand() {
       onetab = false;
     }
     else if(c == '\t') {
-      vector<string> words;
-
-      if(cmd.find(' ') != string::npos) {
-        words = findFilesWith(temp);
-        sort(words.begin(), words.end());
-
-        if(words.size() == 1) {
-          for(int i=0 ;i<temp.size() ;i++) cout<<"\b \b";
-          cmd += *words.begin() + " ";
-          cout<<*words.begin()<<' '<<flush;
-          temp = "";
-          onetab = false;
-          continue;
-        }
-        else if(words.size() > 1) {
-          string lcp = longestCommonPrefix(words);
-          if(lcp != temp) {
-            for(int i=0 ;i<temp.size() ;i++) cout<<"\b \b";
-            cout<<lcp<<flush;
-            temp = lcp;
-            onetab = false;
-            continue;
-          }
-        }
-      }
-
-      words = checkAutoCompletion->startWith(temp);
+      vector<string> words = checkAutoCompletion->startWith(temp);
       sort(words.begin() , words.end());
 
       if(words.size() == 1) {
@@ -767,6 +721,11 @@ void iter(string& cmd, bool inPipeline = false) {
   }
   else if(tokens[0] == "cat") {
     for(int i=1 ;i<maxIDX ;i++) {
+      if(!tokens[i].empty()) {
+        while(!tokens[i].empty() && tokens[i].back() == '\t') {
+          tokens[i].pop_back();
+        }
+      }
       tokens[i] = checkAutoCompletion->startWith(tokens[i])[0];
       if(!fs::exists(fs::path(tokens[i]))) {
         errorstr += "cat: " + tokens[i] + ": No such file or directory" + '\n';
@@ -885,37 +844,50 @@ void iter(string& cmd, bool inPipeline = false) {
   }
   else {
     fs::path outputFile = createPathTo(outputFilePath);
-    ios_base::openmode mode = ios::out;
-    mode |= append ? ios::app : ios::trunc;
-
-    ofstream File(outputFile.string(), mode);
-    if(!File.is_open()) {
-      return;
-    }
-
-    streambuf* oldCout = nullptr;
-    streambuf* oldCerr = nullptr;
 
     if(directerr) {
-      oldCerr = cerr.rdbuf(File.rdbuf());
+      if(str.size()) {
+        cout<<str;
+      }
+
+      if(errorstr.size()) {
+        if(overWrite) {
+          ofstream File(outputFile.string());
+          if(File.is_open()) {
+            File<<errorstr;
+            File.close();
+          }
+        }
+        else {
+          ofstream File(outputFile.string() , ios::app);
+          if(File.is_open()) {
+            File<<errorstr;
+            File.close();
+          }
+        }
+      }
     }
     else {
-      oldCout = cout.rdbuf(File.rdbuf());
-    }
+      if(errorstr.size()) {
+        cerr<<errorstr;
+      }
 
-    if(errorstr.size()) {
-      cerr<<errorstr;
-    }
-
-    if(str.size()) {
-      cout<<str;
-    }
-
-    if(oldCout != nullptr) {
-      cout.rdbuf(oldCout);
-    }
-    if(oldCerr != nullptr) {
-      cerr.rdbuf(oldCerr);
+      if(str.size()) {
+        if(overWrite) {
+          ofstream File(outputFile.string());
+          if(File.is_open()) {
+            File<<str;
+            File.close();
+          }
+        }
+        else {
+          ofstream File(outputFile.string() , ios::app);
+          if(File.is_open()) {
+            File<<str;
+            File.close();
+          }
+        }
+      }
     }
   }
 }
