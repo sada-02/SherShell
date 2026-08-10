@@ -305,6 +305,26 @@ vector<string> findExecWith(const string& str) {
   return ret;
 }
 
+vector<string> findFilesWith(const string& str) {
+  vector<string> matches;
+
+  try {
+    for(const auto& entry : fs::directory_iterator(".")) {
+      if(fs::is_directory(entry.path())) continue;
+
+      string filename = entry.path().filename().string();
+      if(filename.rfind(str, 0) == 0) {
+        matches.push_back(filename);
+      }
+    }
+  }
+  catch(...) {
+    return {};
+  }
+
+  return matches;
+}
+
 string longestCommonPrefix(vector<string>& words) {
   if(words.empty()) return "";
 
@@ -373,7 +393,33 @@ string readCommand() {
       onetab = false;
     }
     else if(c == '\t') {
-      vector<string> words = checkAutoCompletion->startWith(temp);
+      vector<string> words;
+
+      if(cmd.find(' ') != string::npos) {
+        words = findFilesWith(temp);
+        sort(words.begin(), words.end());
+
+        if(words.size() == 1) {
+          for(int i=0 ;i<temp.size() ;i++) cout<<"\b \b";
+          cmd += *words.begin() + " ";
+          cout<<*words.begin()<<' '<<flush;
+          temp = "";
+          onetab = false;
+          continue;
+        }
+        else if(words.size() > 1) {
+          string lcp = longestCommonPrefix(words);
+          if(lcp != temp) {
+            for(int i=0 ;i<temp.size() ;i++) cout<<"\b \b";
+            cout<<lcp<<flush;
+            temp = lcp;
+            onetab = false;
+            continue;
+          }
+        }
+      }
+
+      words = checkAutoCompletion->startWith(temp);
       sort(words.begin() , words.end());
 
       if(words.size() == 1) {
@@ -721,11 +767,6 @@ void iter(string& cmd, bool inPipeline = false) {
   }
   else if(tokens[0] == "cat") {
     for(int i=1 ;i<maxIDX ;i++) {
-      if(!tokens[i].empty()) {
-        while(!tokens[i].empty() && tokens[i].back() == '\t') {
-          tokens[i].pop_back();
-        }
-      }
       tokens[i] = checkAutoCompletion->startWith(tokens[i])[0];
       if(!fs::exists(fs::path(tokens[i]))) {
         errorstr += "cat: " + tokens[i] + ": No such file or directory" + '\n';
