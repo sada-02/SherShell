@@ -277,14 +277,19 @@ vector<string> tokenize(string& query) {
 
 vector<string> findFileWith(const string& str) {
   Trie* filePaths = new Trie();
+  vector<fs::path> searchDirs = {fs::current_path()};
   string dir;
   stringstream path(PATH);
 
   while(getline(path , dir , delimiter)) {
-    if(!fs::exists(fs::path(dir)) || !fs::is_directory(fs::path(dir))) continue;
+    searchDirs.emplace_back(dir);
+  }
+
+  for(const fs::path& searchDir : searchDirs) {
+    if(!fs::exists(searchDir) || !fs::is_directory(searchDir)) continue;
 
     try {
-      for(const auto& d : fs::directory_iterator(dir)) {
+      for(const auto& d : fs::directory_iterator(searchDir)) {
         if(fs::is_directory(d.path())) continue;  
         auto perms = fs::status(d.path()).permissions();
         if((perms & fs::perms::owner_exec) != fs::perms::none ||
