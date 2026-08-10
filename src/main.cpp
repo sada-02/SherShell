@@ -275,8 +275,8 @@ vector<string> tokenize(string& query) {
   return tokens;
 }
 
-vector<string> findFile(const string& str, bool findTextFiles = false) {
-  Trie* filePaths = new Trie();
+vector<string> findExecWith(const string& str) {
+  Trie* executablePaths = new Trie();
   string dir;
   stringstream path(PATH);
 
@@ -287,21 +287,11 @@ vector<string> findFile(const string& str, bool findTextFiles = false) {
       for(const auto& d : fs::directory_iterator(dir)) {
         if(fs::is_directory(d.path())) continue;
         
-        if(findTextFiles) {
-          auto ext = d.path().extension().string();
-          if(ext == ".txt" || ext == ".md" || ext == ".log" || ext == ".csv" ||
-            ext == ".json" || ext == ".xml" || ext == ".yaml" || ext == ".yml" ||
-            ext == ".cpp" || ext == ".c" || ext == ".h" || ext == ".hpp") {
-            filePaths->insert(d.path().filename().string());
-          }
-        }
-        else {
-          auto perms = fs::status(d.path()).permissions();
-          if((perms & fs::perms::owner_exec) != fs::perms::none ||
-            (perms & fs::perms::group_exec) != fs::perms::none ||
-            (perms & fs::perms::others_exec) != fs::perms::none) {
-            filePaths->insert(d.path().filename().string());    
-          }
+        auto perms = fs::status(d.path()).permissions();
+        if((perms & fs::perms::owner_exec) != fs::perms::none ||
+          (perms & fs::perms::group_exec) != fs::perms::none ||
+          (perms & fs::perms::others_exec) != fs::perms::none) {
+          executablePaths->insert(d.path().filename().string());    
         }
       }
     } 
@@ -310,8 +300,8 @@ vector<string> findFile(const string& str, bool findTextFiles = false) {
     }
   }
 
-  vector<string> ret = filePaths->startWith(str);
-  delete filePaths;
+  vector<string> ret = executablePaths->startWith(str);
+  delete executablePaths;
   return ret;
 }
 
@@ -383,18 +373,30 @@ string readCommand() {
       onetab = false;
     }
     else if(c == '\t') {
-      vector<string> words;
-      bool completingArgument = cmd.find(' ') != string::npos;
-
-      if(completingArgument) {
-        words = findFile(temp, true);
-      }
-      else {
-        words = checkAutoCompletion->startWith(temp);
-      }
-
+      vector<string> words = checkAutoCompletion->startWith(temp);
       sort(words.begin() , words.end());
 
+      if(words.size() == 1) {
+        for(int i=0 ;i<temp.size() ;i++) cout<<"\b \b";
+        cmd += *words.begin() + " ";
+        cout<<*words.begin()<<' '<<flush;
+        temp = "";
+        onetab = false;
+        continue;
+      }
+      else if(words.size() > 1) {
+        string lcp = longestCommonPrefix(words);
+        if(lcp != temp) {
+          for(int i=0 ;i<temp.size() ;i++) cout<<"\b \b";
+          cout<<lcp<<flush;
+          temp = lcp;
+          onetab = false;
+          continue;
+        }
+      }
+
+      words = findExecWith(temp);
+      sort(words.begin() , words.end());
       if(words.size() == 1) {
         for(int i=0 ;i<temp.size() ;i++) cout<<"\b \b";
         cmd += *words.begin() + " ";
