@@ -285,7 +285,7 @@ vector<string> findFileWith(const string& str) {
     }
   }
 
-  vector<fs::path> searchDirs = {pathProvided.empty() ? fs::current_path() : pathProvided};
+  vector<fs::path> searchDirs = {(pathProvided.empty() ? fs::current_path() : pathProvided)};
   string dir;
   stringstream path(PATH);
 
