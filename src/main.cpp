@@ -885,32 +885,37 @@ void iter(string& cmd, bool inPipeline = false) {
   }
   else {
     fs::path outputFile = createPathTo(outputFilePath);
+    ios_base::openmode mode = ios::out;
+    mode |= append ? ios::app : ios::trunc;
 
-    auto writeToFile = [&](const string& contents) {
-      if(!contents.size()) {
-        return;
-      }
+    ofstream File(outputFile.string(), mode);
+    if(!File.is_open()) {
+      return;
+    }
 
-      ios_base::openmode mode = ios::out;
-      mode |= append ? ios::app : ios::trunc;
-
-      ofstream File(outputFile.string(), mode);
-      if(File.is_open()) {
-        File<<contents;
-        File.flush();
-        File.close();
-      }
-    };
+    streambuf* oldCout = nullptr;
+    streambuf* oldCerr = nullptr;
 
     if(directerr) {
-      writeToFile(errorstr);
+      oldCerr = cerr.rdbuf(File.rdbuf());
     }
     else {
-      if(errorstr.size()) {
-        cerr<<errorstr;
-      }
+      oldCout = cout.rdbuf(File.rdbuf());
+    }
 
-      writeToFile(str);
+    if(errorstr.size()) {
+      cerr<<errorstr;
+    }
+
+    if(str.size()) {
+      cout<<str;
+    }
+
+    if(oldCout != nullptr) {
+      cout.rdbuf(oldCout);
+    }
+    if(oldCerr != nullptr) {
+      cerr.rdbuf(oldCerr);
     }
   }
 }
