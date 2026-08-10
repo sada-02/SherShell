@@ -891,7 +891,10 @@ void iter(string& cmd, bool inPipeline = false) {
         return;
       }
 
-      ofstream File(outputFile.string(), append ? ios::app : ios::trunc);
+      ios_base::openmode mode = ios::out;
+      mode |= append ? ios::app : ios::trunc;
+
+      ofstream File(outputFile.string(), mode);
       if(File.is_open()) {
         File<<contents;
         File.flush();
