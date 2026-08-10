@@ -294,7 +294,7 @@ vector<string> findFileWith(const string& str) {
         if(fs::is_directory(d.path())) {
            string foldername = d.path().filename().string();
            if(foldername.rfind(incompletePrefix, 0) == 0) {
-            ret.push_back(prefixToAdd + foldername);
+            ret.push_back(prefixToAdd + foldername + "/");
            }
         }
         else {
@@ -327,12 +327,6 @@ vector<string> findFileWith(const string& str) {
   }
   else {
     addMatches(fs::current_path(), "");
-
-    string dir;
-    stringstream path(PATH);
-    while(getline(path , dir , delimiter)) {
-      addMatches(fs::path(dir), "");
-    }
   }
 
   return ret;
