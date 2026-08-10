@@ -279,11 +279,9 @@ vector<string> findFileWith(const string& str) {
   Trie* filePaths = new Trie();
 
   string pathProvided = "";
-  if(str.find('/') != str.end()) {
-    for(int i=str.size()-1 ;i>=0 ;i--) {
-      if(str[i] == '/') {
-        pathProvided = str.substr(0,i+1);
-      }
+  for(int i=str.size()-1 ;i>=0 ;i--) {
+    if(str[i] == '/') {
+      pathProvided = str.substr(0,i+1);
     }
   }
 
