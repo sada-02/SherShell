@@ -291,10 +291,17 @@ vector<string> findFileWith(const string& str) {
 
     try {
       for(const auto& d : fs::directory_iterator(searchDir)) {
+        string entryName = d.path().filename().string();
+        if(!incompletePrefix.size() && !entryName.empty() && entryName[0] == '.') {
+          continue;
+        }
+        if(!incompletePrefix.empty() && incompletePrefix[0] != '.' && !entryName.empty() && entryName[0] == '.') {
+          continue;
+        }
+
         if(fs::is_directory(d.path())) {
-           string foldername = d.path().filename().string();
-           if(foldername.rfind(incompletePrefix, 0) == 0) {
-            ret.push_back(prefixToAdd + foldername + "/");
+           if(entryName.rfind(incompletePrefix, 0) == 0) {
+            ret.push_back(prefixToAdd + entryName + "/");
            }
         }
         else {
@@ -309,9 +316,8 @@ vector<string> findFileWith(const string& str) {
             ext == ".cpp" || ext == ".c" || ext == ".h" || ext == ".hpp";
 
           if(isExecutable || isTextLike) {
-            string filename = d.path().filename().string();
-            if(filename.rfind(incompletePrefix, 0) == 0) {
-              ret.push_back(prefixToAdd + filename);
+            if(entryName.rfind(incompletePrefix, 0) == 0) {
+              ret.push_back(prefixToAdd + entryName);
             }
           }
         }
