@@ -721,6 +721,11 @@ void iter(string& cmd, bool inPipeline = false) {
   }
   else if(tokens[0] == "cat") {
     for(int i=1 ;i<maxIDX ;i++) {
+      if(!tokens[i].empty()) {
+        while(!tokens[i].empty() && tokens[i].back() == '\t') {
+          tokens[i].pop_back();
+        }
+      }
       tokens[i] = checkAutoCompletion->startWith(tokens[i])[0];
       if(!fs::exists(fs::path(tokens[i]))) {
         errorstr += "cat: " + tokens[i] + ": No such file or directory" + '\n';
