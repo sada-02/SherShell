@@ -739,7 +739,6 @@ void iter(string& cmd, bool inPipeline = false) {
           tokens[i].pop_back();
         }
       }
-      tokens[i] = checkCmdsAutoCompletion->startWith(tokens[i])[0];
       if(!fs::exists(fs::path(tokens[i]))) {
         errorstr += "cat: " + tokens[i] + ": No such file or directory" + '\n';
         continue;
