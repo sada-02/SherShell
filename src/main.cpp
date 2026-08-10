@@ -177,7 +177,7 @@ class Trie {
 
 };
 
-Trie* checkAutoCompletion = new Trie();
+Trie* checkCmdsAutoCompletion = new Trie();
 
 vector<string> tokenize(string& query) {
   vector<string> tokens ;
@@ -275,8 +275,8 @@ vector<string> tokenize(string& query) {
   return tokens;
 }
 
-vector<string> findExecWith(const string& str) {
-  Trie* executablePaths = new Trie();
+vector<string> findFileWith(const string& str) {
+  Trie* filePaths = new Trie();
   string dir;
   stringstream path(PATH);
 
@@ -285,13 +285,19 @@ vector<string> findExecWith(const string& str) {
 
     try {
       for(const auto& d : fs::directory_iterator(dir)) {
-        if(fs::is_directory(d.path())) continue;
-        
+        if(fs::is_directory(d.path())) continue;  
         auto perms = fs::status(d.path()).permissions();
         if((perms & fs::perms::owner_exec) != fs::perms::none ||
           (perms & fs::perms::group_exec) != fs::perms::none ||
           (perms & fs::perms::others_exec) != fs::perms::none) {
-          executablePaths->insert(d.path().filename().string());    
+          filePaths->insert(d.path().filename().string());    
+        }
+      
+        auto ext = d.path().extension().string();
+        if(ext == ".txt" || ext == ".md" || ext == ".log" || ext == ".csv" ||
+          ext == ".json" || ext == ".xml" || ext == ".yaml" || ext == ".yml" ||
+          ext == ".cpp" || ext == ".c" || ext == ".h" || ext == ".hpp") {
+          filePaths->insert(d.path().filename().string());
         }
       }
     } 
@@ -300,8 +306,8 @@ vector<string> findExecWith(const string& str) {
     }
   }
 
-  vector<string> ret = executablePaths->startWith(str);
-  delete executablePaths;
+  vector<string> ret = filePaths->startWith(str);
+  delete filePaths;
   return ret;
 }
 
@@ -373,7 +379,8 @@ string readCommand() {
       onetab = false;
     }
     else if(c == '\t') {
-      vector<string> words = checkAutoCompletion->startWith(temp);
+      vector<string> tok = tokenize(temp);
+      vector<string> words = checkCmdsAutoCompletion->startWith(tok.end());
       sort(words.begin() , words.end());
 
       if(words.size() == 1) {
@@ -395,7 +402,7 @@ string readCommand() {
         }
       }
 
-      words = findExecWith(temp);
+      words = findFileWith(tok.end());
       sort(words.begin() , words.end());
       if(words.size() == 1) {
         for(int i=0 ;i<temp.size() ;i++) cout<<"\b \b";
@@ -726,7 +733,7 @@ void iter(string& cmd, bool inPipeline = false) {
           tokens[i].pop_back();
         }
       }
-      tokens[i] = checkAutoCompletion->startWith(tokens[i])[0];
+      tokens[i] = checkCmdsAutoCompletion->startWith(tokens[i])[0];
       if(!fs::exists(fs::path(tokens[i]))) {
         errorstr += "cat: " + tokens[i] + ": No such file or directory" + '\n';
         continue;
@@ -974,7 +981,7 @@ int main() {
   cerr<<unitbuf;
 
   for(const string& str : builtins) commands[str] = "sh";
-  for(const string& str : defaultcmds) checkAutoCompletion->insert(str);
+  for(const string& str : defaultcmds) checkCmdsAutoCompletion->insert(str);
   PATH = getenv("PATH");
   HOME = getenv("HOME");
 
