@@ -380,7 +380,8 @@ string readCommand() {
     }
     else if(c == '\t') {
       vector<string> tok = tokenize(temp);
-      vector<string> words = checkCmdsAutoCompletion->startWith(*tok.end());
+      string prefix = tok.empty() ? temp : tok.back();
+      vector<string> words = checkCmdsAutoCompletion->startWith(prefix);
       sort(words.begin() , words.end());
 
       if(words.size() == 1) {
@@ -402,7 +403,7 @@ string readCommand() {
         }
       }
 
-      words = findFileWith(*tok.end());
+      words = findFileWith(prefix);
       sort(words.begin() , words.end());
       if(words.size() == 1) {
         for(int i=0 ;i<temp.size() ;i++) cout<<"\b \b";
