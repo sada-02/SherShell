@@ -428,8 +428,17 @@ string readCommand() {
       sort(words.begin() , words.end());
       if(words.size() == 1) {
         for(int i=0 ;i<temp.size() ;i++) cout<<"\b \b";
-        cmd += *words.begin() + " ";
-        cout<<*words.begin()<<' '<<flush;
+        const string& completion = *words.begin();
+        bool isDirectoryCompletion = !completion.empty() && completion.back() == '/';
+        cmd += completion;
+        if(!isDirectoryCompletion) {
+          cmd += " ";
+        }
+        cout<<completion;
+        if(!isDirectoryCompletion) {
+          cout<<' ';
+        }
+        cout<<flush;
         temp = "";
         onetab = false;
         continue;
